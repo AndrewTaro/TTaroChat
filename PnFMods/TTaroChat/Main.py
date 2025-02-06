@@ -270,7 +270,8 @@ class TTaroChatFilter(object):
         if sender and sender.isOwn:
             return True
         
-        type = extraData.get('type', None) if extraData else None
+        # `extraData` can be str for Scenario instructions/bot messages
+        type = extraData.get('type', None) if extraData and isinstance(extraData, dict) else None
         
         # Achievement chats
         if type == ACHIEVEMENT_CHAT_TYPE:
