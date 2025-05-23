@@ -6,6 +6,8 @@ try:
 except:
     pass
 
+import xml.etree.ElementTree as ET
+
 def logInfo(*args):
     data = [str(i) for i in args]
     utils.logInfo( '[{}] {}'.format(MOD_NAME, ', '.join(data)) )
@@ -70,7 +72,6 @@ def getUserPref(key, default, rType):
     rawValue = round(ui.getUserPrefs(SECTION_NAME, key, default))
     return rType(rawValue)
 
-
 class TTaroChatExporter(object):
     def __init__(self):
         self._entityIds = []
@@ -99,33 +100,45 @@ class TTaroChatExporter(object):
             entity = dataHub.getEntityCollections('battleChatAndLogMessage')[-1]
             comp = entity[CC.battleChatAndLogMessage]
             if isPlayerChat(comp.playerId, comp.type) and comp.message not in RPF_MESSAGE_TO_DIRECTION:
-                self.__exportChat(comp)
+                self._createEntity()
+                self.__exportChat(entity.id, comp)
 
-    def __exportChat(self, component):
+    def __exportChat(self, entityId, comp):
         logInfo('Exporting chat')
-        data = web.urlEncode({'text': component.message})
+        data = web.urlEncode({'text': comp.message})
         url = '{}?{}'.format(EXPORT_URL, data)
 
         def callback(res):
             # In case an expernal app returns a response to the exported chat.
-            return self.__onResponseReceived(component.id, res)
+            return self.__onResponseReceived(entityId, comp.htmlText, res)
         
         web.fetchURL(url, callback, '', 5, 'GET')
 
-    def __onResponseReceived(self, compId, res):
+    def __replaceSecondFontTag(self, origHtmlMessage, newMessage):
+        root = ET.fromstring(origHtmlMessage)
+        fonts = root.findall('font')
+        if len(fonts) >= 2:
+            fonts[1].text = newMessage
+        else:
+            logError('Not enough font tags in html message', origHtmlMessage)
+        
+        return ET.tostring(root, encoding='utf-8').decode('utf-8')
+
+    def __onResponseReceived(self, entityId, origHtmlMessage, res):
         if res and res.get('response') == 200:
             message = str(res.get('data'))
             if message:
-                self._createEntity(compId, message)
+                message = self.__replaceSecondFontTag(origHtmlMessage, message)
+                self._createEntity(entityId, message)
 
-    def _createEntity(self, compId, message):
-        compId = 'modTTaroChat_{}'.format(compId)
-        entityId = ui.createUiElement()
+    def _createEntity(self, entityId, message):
+        compId = 'modTTaroChat_{}'.format(entityId)
         ui.addDataComponentWithId(entityId, compId, {'message': message})
 
         self._entityIds.append(entityId)
 
     def _clearEntities(self, *args):
+        # Check if this is necessary
         for entityId in self._entityIds:
             ui.deleteUiElement(entityId)
 
