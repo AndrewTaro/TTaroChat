@@ -95,8 +95,7 @@ class TTaroChatTranslator(object):
             pass
 
     def __onChatReceived(self, component):
-        isExportEnabled = getUserPref('ttChatExportChat', True, bool)
-        if isExportEnabled:
+        if getUserPref('ttChatExportChat', True, bool):
             entity = dataHub.getEntityCollections('battleChatAndLogMessage')[-1]
             comp = entity[CC.battleChatAndLogMessage]
             if isPlayerChat(comp.playerId, comp.type) and comp.message not in RPF_MESSAGE_TO_DIRECTION:
