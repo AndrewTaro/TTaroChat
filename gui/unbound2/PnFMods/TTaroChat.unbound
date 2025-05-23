@@ -39,12 +39,6 @@
 	DEFAULT		: 0xffffff,
 })
 
-(def constant TTChat_CHAT_RENDERER [
-	'TTChat_CombatLogMessageRendererRoslich',
-	'TTChat_CombatLogMessageRendererAutoSpy',
-	'TTChat_CombatLogMessageRendererTTaro',
-])
-
 (def constant TTChat_SHIP_ICON_COLOR_PRESET [
 	#Use -(234-0x??)
 	#None
@@ -112,418 +106,284 @@
 	},
 ])
 
-(def css $TTChat_ShipInfoTextRoslich()
+(def css $TTChat_ShipInfoText()
 	(extends $FontFamilyDefaultBold)
 	(extends $FontColorDefault)
 	(fontSize = 12)
 )
 
-(def css $TTChat_ShipInfoTextAutoSpy()
-	(extends $FontFamilyDefaultBold)
-	(extends $FontColorDefault)
-	(fontSize = 15)
-)
-
-(def css $TTChat_ShipInfoTextTTaro()
-	(extends $FontFamilyDefaultBold)
-	(extends $FontColorDefault)
-	(fontSize = 12)
-
-	(marginTextTop = -6px)
-	(marginTextBottom = -5px)
-)
-(def css $TTChat_PlayerInfoTextTTaro()
-	(extends $FontFamilyDefault)
-	(extends $FontColorDefault)
-	(fontSize = 15)
-
-	(marginTextTop = -6px)
-	(marginTextBottom = -6px)
-)
-
-(def macro TTChat_GET_CHAT_MOD_SCOPE()
-	# Mod
-	(macro TT_GET_USERPREF)
-
-	(macro TT_GET_PREF_BOOL _varName="'isClanNameVisible'"		_pref="TTChat_PREFS.CLAN_NAME_VISIBLE")
-	(macro TT_GET_PREF_BOOL _varName="'isPlayerNameVisible'" 	_pref="TTChat_PREFS.PLAYER_NAME_VISIBLE")
-
-	(macro TT_GET_PREF_BOOL _varName="'isShipNameVisible'" 		_pref="TTChat_PREFS.SHIP_NAME_VISIBLE")
-	(macro TT_GET_PREF_BOOL _varName="'isShipIconVisible'" 		_pref="TTChat_PREFS.SHIP_ICON_VISIBLE")
-	(macro TT_GET_PREF_BOOL _varName="'isShipTierVisible'" 		_pref="TTChat_PREFS.SHIP_TIER_VISIBLE")
-
-	(var messageComponent:gfx = "_messageEntity.battleChatAndLogMessage")
-
-	(var avatarComponent:gfx = "playerEntity ? playerEntity.avatar : null")
-	(var shipNameUpper:str = "avatarComponent ? avatarComponent.ship.ref.ship.nameUpper : ''")
-	(var shipName:str = "avatarComponent ? tr(avatarComponent.ship.ref.ship.nameIDS) : ''")
-	(var subType:str = "avatarComponent ? avatarComponent.ship.ref.ship.subtype : ''")
-	(var tier:str = "avatarComponent ? avatarComponent.ship.ref.ship.levelRome : ''")
-
-	(var messageId:str = "messageComponent.id")
-
-	(var trWatcher:gfx = "$datahub.getPrimWatcher(CC.mods_DataComponent, 'modTTaroChat_' + messageId)")
-	(var trEntity:gfx = "trWatcher.entity" (event "trWatcher.event"))
-
-	(var dataComponent:gfx = "trEntity ? trEntity.mods_DataComponent : null")
-	(var tooltipChat:str = "dataComponent ? messageComponent.message : null")
-	(var message:str = "dataComponent ? dataComponent.data.message : messageComponent.message" (event "dataComponent.evDataChanged"))
-	(var originalHtmlMessage:str = "messageComponent.htmlText")
-
-	# Relation
-	(var isAlly:bool = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.ALLY")
-	(var isEnemy:bool = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.ENEMY")
-	(var isTeamKiller:bool = "avatarComponent ? avatarComponent.tkStatus : false")
-	(var divisionComponent:gfx = "playerEntity && playerEntity.hasComponent(CC.divisionMember) ? playerEntity.divisionMember : null")
-	(var isInMyDivision:bool = "divisionComponent ? divisionComponent.isInSameDivision : false")
-
-	# Mute
-	(var isQuickCommand:bool = "messageComponent.type == -5")
-	(var isAchievement:bool = "messageComponent.type == -1")
-
-	(var isAllyAchievement:bool = "isAchievement && ('#3fbf8c' in originalHtmlMessage) && !('#d9ae57' in originalHtmlMessage)")
-	(var isEnemyAchievement:bool = "isAchievement && ('#bf2900' in originalHtmlMessage)")
-	# Ally: dont hide the achievements of div mates and self
-	(var mutePrefPrefix:str = "	isAlly  || isAllyAchievement  ? 'ALLY_'  : 
-								isEnemy || isEnemyAchievement ? 'ENEMY_' : 
-								'' "
-	)
-	(var mutePrefPostfix:str = "
-							isQuickCommand ?
-								tr('IDS_CMD_QUICK_GOOD_GAME_WINDOW')		in message ? 'WELL_DONE_VISIBLE' :
-								tr('IDS_CMD_QUICK_GOOD_LUCK_WINDOW')		in message ? 'GOOD_LUCK_VISIBLE' :
-								tr('IDS_CMD_QUICK_CARAMBA_WINDOW')			in message ? 'WTF_VISIBLE' :
-								tr('IDS_CMD_QUICK_AYE_AYE_WINDOW')			in message ? 'AFFIRMITIVE_VISIBLE' :
-								tr('IDS_CMD_QUICK_NO_WAY_WINDOW')			in message ? 'NEGATIVE_VISIBLE' :
-								tr('IDS_CMD_QUICK_BACK_WINDOW')				in message ? 'GET_BACK_VISIBLE' :
-								tr('IDS_CMD_QUICK_NEED_SMOKE_WINDOW')		in message ? 'NEED_SMOKE_VISIBLE' :
-								tr('IDS_CMD_QUICK_NEED_SUPPORT_WINDOW') 	in message ? 'NEED_SUPPORT_VISIBLE' :
-								tr('IDS_CMD_QUICK_NEED_AIR_DEFENCE_WINDOW') in message ? 'NEED_AIR_SUPPORT_VISIBLE' :
-								tr('IDS_CMD_QUICK_NEED_VISION_WINDOW')		in message ? 'NEED_SPOTTING_VISIBLE' :
-								'' :
-							isAchievement ?
-								'ACHIEVEMENTS_VISIBLE' :
-							isSysLogMessage ?
-								'' : 
-							'CHATS_VISIBLE' "
-		watch=false
-	)
-	(var mutePrefName:str = "mutePrefPrefix + mutePrefPostfix")
-	(var mutePref:dict = "mutePrefName in TTChat_PREFS ? TTChat_PREFS[mutePrefName] : TTChat_PREFS.DEFAULT")
-
-	(macro TT_GET_PREF_BOOL _varName="'isVisiblePref'" 		_pref="mutePref")
-	(var isVisible:bool = "isSelf || isInMyDivision ? true : isVisiblePref")
-
-	# Channel Id
-	(var channelId:number = "messageComponent.targetChannelId")
-	(var isDivisionChat:bool = "channelId == SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.DIVISION")
-	(var isAllChat:bool = "channelId == SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.GENERAL")
-	(var isTeamChat:bool = "channelId == SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.TEAM")
-	(var isSysChat:bool = "channelId == SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.SYSTEM")
-
-	# Name Color
-	(macro TT_GET_PREF_NUMBER _varName="'chatStyleIndexPref'"		_pref="TTChat_PREFS.STYLE_INDEX")
-	(var nameColorPreset:dict = "chatStyleIndexPref < TTChat_NAME_COLOR_PRESET.length ? TTChat_NAME_COLOR_PRESET[chatStyleIndexPref] : TTChat_NAME_COLOR_PRESET[0]")
-
-	(var nameColor:number = "	isInMyDivision	? nameColorPreset.DIVISION	:
-								isSelf			? nameColorPreset.PLAYER		:
-								isTeamKiller	? nameColorPreset.TEAMKILLER	:
-								isAlly			? nameColorPreset.ALLY		:
-								isEnemy			? nameColorPreset.ENEMY		
-												: nameColorPreset.DEFAULT
-							"
-	)
-	# Chat Color
-	(var chatColor:number = "	isDivisionChat	? TTChat_CHAT_COLOR.DIVISION	:
-								isTeamChat		? TTChat_CHAT_COLOR.ALLY		:
-								isAllChat		? TTChat_CHAT_COLOR.ALL			
-												: TTChat_CHAT_COLOR.DEFAULT
-							"
-		watch=false
-	)
-
-	# Name and Clan
-	(var avatarName:str = "avatarComponent && isPlayerNameVisible ? avatarComponent.pureName : ''")
-	(var clanId:number = "playerEntity && playerEntity.hasComponent(CC.clanman) ? playerEntity.clanman.clanId : 0")
-	(var clanEntity:gfx = "$datahub.getPrimaryEntity(CC.clan, clanId)")
-	(var clanName:str = "clanEntity && isClanNameVisible ? '[' + clanEntity.clan.tag + ']' : ''")
-
-	(var playerName:str = "clanName + avatarName")
-
-	(var isTranslated:bool = "!(isSysLogMessage || isSysChat)")
-)
-
-(def element CombatLogMessageRenderer(_messageEntity:gfx) layout=true
+# battle\combat_log\combat_log.unbound
+(def element CombatLogPanel() layout=true
 	(scope
+		(var battleInfoWatcher:gfx = "$datahub.getFirstWatcher(CC.battleInfo)")
+		(var battleInfoEntity:gfx = "battleInfoWatcher.entity" (event "battleInfoWatcher.event"))
+		(var battleType:str = "battleInfoEntity.battleInfo.battleType")
+		(var isEventBattle:bool = "battleType == SC.Common.BATTLE_TYPES.EVENT_BATTLE")
+		
+		(var collection:gfx = "$datahub.getCollection(CC.avatar)")
+		(var allyCollection:gfx = "collection ? collection.getChildByPath('team.ally.alive') : null" (event "collection.evChildAdded") (event "collection.evChildRemoved"))
+		(var allyItems:array = "allyCollection ? allyCollection.items : null" (event "allyCollection.evAdded") (event "allyCollection.evRemoved"))
+		(var itemsLength:number = "allyItems ? allyItems.length : 0")
+		(var allTeammatesAreDead:number = "itemsLength == 0")
+
+		(var spectatorStateWatcher:gfx = "$datahub.getFirstWatcher(CC.spectatorState)")
+		(var spectatorStateEntity:gfx = "spectatorStateWatcher.entity" (event "spectatorStateWatcher.event"))
+		(var spectatorStateValue:number = "spectatorStateEntity ? spectatorStateEntity.spectatorState.state : INVALID_SPECTATOR_STATE" (event "spectatorStateEntity.spectatorState.evStateChanged"))
+		(var isSpectator:bool = "spectatorStateValue == SC.Common.SPECTATOR_STATE.TRAINING_SPECTATOR")
+		(var isTeamSpectator:bool = "isEventBattle ? allTeammatesAreDead : isSpectator")
+
 		# Mod
 		(macro TT_GET_USERPREF)
-		(macro TT_GET_PREF_NUMBER _varName="'chatStyleIndexPref'"		_pref="TTChat_PREFS.STYLE_INDEX")
-		(var rendererName:str = "chatStyleIndexPref < TTChat_CHAT_RENDERER.length ? TTChat_CHAT_RENDERER[chatStyleIndexPref] : TTChat_CHAT_RENDERER[0]")
 		#
 	)
-	(controller $Instance
-		(bind renderer "rendererName")
+	# Mod
+	(controller $Instance renderer='TTChat_CombatLogPanelContent'
+		(bind enabled "!isTeamSpectator")
 		(args
-			"_messageEntity"
+			_userPrefsNum="_userPrefsNum"
 		)
 	)
+	#
 )
 
-(def element TTChat_CombatLogMessageRendererRoslich (_messageEntity:gfx) layout=true
+# battle\combat_log\combat_log.unbound
+(def element TTChat_CombatLogPanelContent (_userPrefsNum:gfx=null) layout=true
 	(scope
-		(event evHideInfotip)
-
-		(event evMenuItemClicked)
-
 		(event evNewMessageEvent)
 
-		(var battleChatEntity:gfx = "$datahub.getSingleEntity(CC.battleChatAndLog)")
+		(event evShowChatEvent)
+		(event evShowChatWithAutoScrollEvent)
+		(event evHideChatEvent)
+		(event evDelayedHideChatEvent)
 
-		(var playerId:number = "_messageEntity.battleChatAndLogMessage.playerId")
-		(var playerEntity:gfx = "$datahub.getPrimaryEntity(CC.avatar, playerId)")
-		(var isBot:bool = "playerEntity && playerEntity.avatar.isBot")
-
-		(var relationComponent:gfx = "playerEntity ? playerEntity.relation : null")
-		(var isSelf:number = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.SELF")
-		(var isSysLogMessage:bool = "playerEntity == null")
-
-		(var isContextMenuAvailable:bool = "!(isSelf || isSysLogMessage || isBot)")
-
-		(var contextMenuVisible:bool = "false")
-
-		(var mouse:gfx = "$datahub.getSingleComponent(CC.mouse)")
-		(var isMouseActive:bool = "mouse.active" (event "mouse.evActiveChanged"))
-
-		(var selfPlayer:gfx = "$datahub.getSingleEntity(CC.accountSelf)")
-
-		# Mod
-		(macro TTChat_GET_CHAT_MOD_SCOPE)
-
-		(var playerNameHtml:str = "'<font color = \'#' + toHex(nameColor, 6) + '\'>' + playerName + ': </font>'")
-		(var messageHtml:str = "'<font color = \'#' + toHex(chatColor, 6) + '\'>' + message + '</font>'")
-		(var translatedHtmlText:str = "'<body>' + playerNameHtml + messageHtml + '</body>'")
-		(var htmlText:str = "isTranslated ? translatedHtmlText : originalHtmlMessage")
-		#
-	)
+		(event evInputFocusInEvent)
+		(event evInputFocusOutEvent)
 	
-	#(macro trace "mutePrefName in TTChat_PREFS")
+		(event evContextMenuShowed)
+		(event evContextMenuHidden)
 
-	# Mod
-	(bind visible "isVisible")
-	#
+		(macro MOUSE_HANDLER_SCOPE)
+		(macro MOUSE_HANDLER_SCOPE "'chatInput_'")
 
-	(dispatch evHideInfotip args="{}" (bind trigger "isMouseActive") (event "evMenuItemClicked") (event "evNewMessageEvent"))
+		(macro GET_PREF 'enableBattleChat' "'ui.enableBattleChat'")
 
-	(style (width = "COMBAT_LOG_MESSAGE_WIDTH"))
+		(var selfAvatarWatcher:gfx = "$datahub.getFirstWatcher(CC.playerAvatar)")
+		(var selfAvatarEntity:gfx = "selfAvatarWatcher.enity" (event "selfAvatarWatcher.event"))
 
-	# Mod
-	(controller $Tooltip (renderer = 'TTChat_BattlePlayerTooltip')
-		(args
-			_playerEntity	= "playerEntity"
-			_originalMessage= "tooltipChat"
-		)
-		(macro DEFAULT_TOOLTIP_BEHAVIOUR "0")
-		(cache=false)
+		(var battleChatAndLog:gfx = "$datahub.getSingleComponent(CC.battleChatAndLog)")
+		(var isInputFocused:bool = "battleChatAndLog.isInputFocused" (event "battleChatAndLog.evIsInputFocusedChanged"))
+		(var currentChannelId:number = "battleChatAndLog.currentChannelId" (event "battleChatAndLog.evChannelChanged"))
+		(var isChatDisabled:bool = "battleChatAndLog.isChatDisabled" (event "battleChatAndLog.evChannelChanged"))
+		(var isTabDisabled:bool = "battleChatAndLog.isTabDisabled" (event "battleChatAndLog.evChannelChanged"))
+
+		(var isDivisionChat:bool = "currentChannelId == SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.DIVISION")
+		(var isTeamChat:bool = "currentChannelId == SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.TEAM")
+
+		(var playerContextMenuVisible:bool = false)
+		(bind playerContextMenuVisible "true" init=false (event "evContextMenuShowed"))
+		(bind playerContextMenuVisible "false" init=false (event "evContextMenuHidden"))
+		
+		(var chatInputActive:bool = "enableBattleChat && isInputFocused")
+		(var chatInputRollOver:bool = "chatInputActive || chatInput_rollOver || playerContextMenuVisible")
+
+		(var isChatExpanded:bool = false)
+		(bind isChatExpanded "true" init=false (event "evShowChatEvent") (event "evShowChatWithAutoScrollEvent"))
+		(bind isChatExpanded "isInputFocused || rollOver || playerContextMenuVisible" init=false watch=false (event "evHideChatEvent"))
+
+		(var battleChatAndLogMessages:gfx = "$datahub.getCollection(CC.battleChatAndLogMessage).child('sorted')")
+		(var battleChatAndLogMessagesItems:gfx = "battleChatAndLogMessages.items" (event "battleChatAndLogMessages.evAdded"))
+		(var battleChatAndLogMessagesCount:number = "battleChatAndLogMessagesItems.length" (event "battleChatAndLogMessages.evAdded"))
+
+		(var chatInputTitleColor:number = "	isChatDisabled || !enableBattleChat	? SC.Ui_styles.SERVICE_COLORS.WHITE :
+											isTeamChat							? SC.Ui_styles.SERVICE_COLORS.GREEN :
+											isDivisionChat						? SC.Ui_styles.SERVICE_COLORS.YELLOW
+																				: SC.Ui_styles.SERVICE_COLORS.WHITE")
+
+		(var chatInputTitleText:str = "	isChatDisabled		? 'IDS_CHAT_DISABLED' :
+										!enableBattleChat	? 'IDS_CHAT_SWITCH_ON' :
+										isTeamChat			? tr('IDS_BATTLE_CHAT_TEAM') + ':' :
+										isDivisionChat		? tr('IDS_LOBBY_CHAT_DIVISION') + ':'
+															: tr('IDS_BATTLE_CHAT_GENERAL') + ':'")
 	)
-	#
 
-	(controller $Tooltip (renderer = 'ContextMenuPlayer')
-		(args _playerEntity="playerEntity" _selfPlayer="selfPlayer")
-		(macro DEFAULT_MENU_BEHAVIOUR "evHideInfotip" "1")
-		(cache=false)
-	)
+	(bindcall externalCall 'inputMapping.onAction' "['battleChat.shown', { }]" init=false watch=false on='addedToStage')
+	(bindcall externalCall 'inputMapping.onAction' "['battleChat.rollOverChanged', { rollOver: rollOver }]" init=false watch=false (bind trigger "rollOver"))
 
-	(element DockSubmenuItem _selected="contextMenuVisible"
-		(class $FullsizeAbsolute)
-		(style (bind hitTest "isContextMenuAvailable"))
-	)
+	(macro MOUSE_EVENTS_DISPATCHER)
+	
+	(dispatch evNewMessageEvent dir="EventDirection.DOWN" args="{}" (event "battleChatAndLogMessages.evAdded"))
 
-	# Mod
-    (block
-		(bind visible "!isSysLogMessage")
+	(dispatch evShowChatEvent args="{}" (bind enabled "isChatExpanded") (event "evNewMessageEvent"))
+	(dispatch evShowChatEvent args="{}" (event "evInputFocusInEvent"))
+
+	(dispatch evShowChatWithAutoScrollEvent args="{}" (bind enabled "!isChatExpanded") (event "evNewMessageEvent"))
+
+	(dispatch evInputFocusInEvent args="{}" on='addedToStage' (bind enabled "isInputFocused") (event "battleChatAndLog.evIsInputFocusedChanged"))
+	(dispatch evInputFocusOutEvent args="{}" (bind enabled "!isInputFocused") (event "battleChatAndLog.evIsInputFocusedChanged"))
+
+	(dispatch evDelayedHideChatEvent args="{}" (bind enabled "!rollOver") (bind trigger "rollOver"))
+	(dispatch evDelayedHideChatEvent args="{}" (event "evContextMenuHidden"))
+	(dispatch evDelayedHideChatEvent args="{}" (event "evNewMessageEvent"))
+	(dispatch evDelayedHideChatEvent args="{}" (event "evInputFocusOutEvent"))
+
+	(dispatch evHideChatEvent args="{}" delay="COMBAT_LOG_HIDE_DELAY" reset=true (event "evDelayedHideChatEvent"))
+
+	
+	(block
+		(macro CHANGE_ALPHA_BY_TRIGGER_ANIM _duration="0.25" _fromAlpha=0 _toAlpha=1 _triggerExpression="isChatExpanded")
+
 		(style
-			(marginTop = "5px")
-			(marginBottom = "-5px")
-			(marginLeft = 4px)
-			(flow = "horizontal")
-			(width = 100%)
-			#(align = "middle|center")
+			(width = "COMBAT_LOG_WIDTH") (height = "COMBAT_LOG_HEIGHT")
+			(align = "bottom")
 		)
-		(tf
-			(class $TTChat_ShipInfoTextRoslich)
-			(bind text "shipNameUpper")
-			(bind visible "isShipNameVisible")
+
+		
+		(block
+			(class $FullsizeAbsolute)
+			(style
+				(backgroundImage = 'url:../battle_hud/combat_log/chat_background.png')
+				(backgroundSize = "fill")
+				(scale9grid = "[4, 4, 1, 19]")
+				(hitTest = false)
+			)
 		)
+
+		
+		(scrollArea
+			(class $FullsizeAbsolute)
+			
+			
+			(style
+				(backgroundColor = 0x01000000)
+				(align = "bottom")
+				(bind hitTest "isChatExpanded")
+			)
+
+			(verticalSlider='ScrollBarVLight')
+			(topShadow='ScrollAreaShadowTop')
+			(bottomShadow='ScrollAreaShadowBottom')
+
+			(activeControlsAlpha=0.7)
+			(inactiveControlsAlpha=0.2)
+			(animationDuration=0.2)
+			(animationEasing="Easing.cubic_out")
+
+			(hscrollPolicy='off')
+			(vscrollPolicy='auto')
+			(repeatController='battleChat')
+
+			(content
+				(name = 'txa_output')
+
+				(style
+					(width = "COMBAT_LOG_WIDTH")
+				)
+
+				(controller $Repeat renderer='TTChat_CombatLogMessageRenderer' name='battleChat'
+					(bind enabled "battleChatAndLogMessagesCount > 0")
+					(bind count "battleChatAndLogMessagesCount")
+					# Mod
+					(args "battleChatAndLogMessagesItems[$index]" _userPrefsNum="_userPrefsNum")
+					#
+				)
+			)
+			(bindcall scrollToEnd (event "evNewMessageEvent"))
+		)
+	)
+
+	
+	(block
+		(macro MOUSE_EVENTS_DISPATCHER "'chatInput_'")
+
+		(style
+			(width = "COMBAT_LOG_INPUT_WIDTH") (height = "COMBAT_LOG_INPUT_HEIGHT")
+			(marginLeft = -3px)
+			(bind hitTest "!isChatDisabled && enableBattleChat")
+		)
+
+		(macro CHANGE_ALPHA_BY_TRIGGER_ANIM _duration="0.1" _fromAlpha=0.8 _toAlpha=1 _triggerExpression="chatInputActive")
+
+		(block
+			(class $FullsizeAbsolute)
+			(style
+				(align = "middle")
+				(bind backgroundImage "'url:../battle_hud/combat_log/' + (isInputFocused	? 'chat_input_focused.png'
+																							: 'chat_input_up.png')")
+				(backgroundSize = "fill")
+				(scale9grid = "[7, 7, 7, 14]")
+			)
+
+			(macro CHANGE_ALPHA_BY_TRIGGER_ANIM _duration="0.1" _fromAlpha=0.6 _toAlpha=1 _triggerExpression="chatInputRollOver")
+			(hblock
+				(name = 'txaHeader')
+				(style
+					(width = 100%)
+					(paddingLeft = "S") (paddingRight = "S")
+					(align = "middle")
+				)
+
+				
+				(tf
+					(class $TextDefaultBold13NM)
+					(style
+						(hitTest = false)
+						(bind textColor "chatInputTitleColor")
+					)
+					(bind text "chatInputTitleText")
+				)
+				(block
+					(style (marginLeft = "XS") (width = 100%))
+					(element CombatLogTextInput _isChatAvailable="enableBattleChat && !isChatDisabled")
+				)
+			)
+		)
+	)
+	(hblock
+		(bind alpha "isInputFocused && enableBattleChat ? 1 : 0")
+		(name = 'txtChatHelp')
+
+		(style
+			(position = "absolute") (bottom = -20px)
+			(width = 100%) (align = "middle") (hitTest = false)
+		)
+		
 		(block
 			(style
-				(width = "27px")
-				(marginTop = "-4px")
-				(marginBottom = -4px)
-				(height = 27)
-				(bind backgroundImage "'url:../battle_hud/markers/ship/icon_white_' + toLower(subType) + '.png'")
+				(marginRight = "XS")
 			)
-			(bind visible "isShipIconVisible")
+			(element HotKey
+					_keyCode = "KEY_TAB"
+					_size = "SIZE.SMALL"
+					_isKeyActive = "false"
+					_hotkeyState = "HotkeyState.DEFAULT"
+			)
 		)
-		# (element ShipMarkerIconSimple "playerEntity"
-		# 	(style
-		# 		(width = "SHIP_ICON_SIZE.WIDTH")
-		# 		(height = "SHIP_ICON_SIZE.HEIGHT")
-		# 	)
-		# )
+
 		(tf
-			(class $TTChat_ShipInfoTextRoslich)
-			(bind text "tier")
-			(bind visible "isShipTierVisible")
+			(class $TextDefault13NM)
+			(alpha = "TC")
+			(text = 'IDS_TAB_CHANGE_CHANNEL')
 		)
 	)
-	#
 
-	(tf
-		(style (width = 100%) (marginTop = -1) (marginLeft = 4) (marginRight = 4) (leading = -3) (fontSize = 15) (hitTest = false)
-			(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
-		)
-		
-		(class $FontFamilyDefault)
-		(bind htmlText "htmlText")
-        # Mod
-		(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
-        #
-	)
-)
-
-(def element TTChat_CombatLogMessageRendererAutoSpy (_messageEntity:gfx) layout=true
-	(scope
-		(event evHideInfotip)
-
-		(event evMenuItemClicked)
-
-		(event evNewMessageEvent)
-
-		(var battleChatEntity:gfx = "$datahub.getSingleEntity(CC.battleChatAndLog)")
-
-		(var playerId:number = "_messageEntity.battleChatAndLogMessage.playerId")
-		(var playerEntity:gfx = "$datahub.getPrimaryEntity(CC.avatar, playerId)")
-		(var isBot:bool = "playerEntity && playerEntity.avatar.isBot")
-
-		(var relationComponent:gfx = "playerEntity ? playerEntity.relation : null")
-		(var isSelf:number = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.SELF")
-		(var isSysLogMessage:bool = "playerEntity == null")
-
-		(var isContextMenuAvailable:bool = "!(isSelf || isSysLogMessage || isBot)")
-
-		(var contextMenuVisible:bool = "false")
-
-		(var mouse:gfx = "$datahub.getSingleComponent(CC.mouse)")
-		(var isMouseActive:bool = "mouse.active" (event "mouse.evActiveChanged"))
-
-		(var selfPlayer:gfx = "$datahub.getSingleEntity(CC.accountSelf)")
-
-		# Mod
-		(macro TTChat_GET_CHAT_MOD_SCOPE)
-
-		(var messageHtml:str = "'<font color = \'#' + toHex(chatColor, 6) + '\'>' + message + '</font>'")
-		(var translatedHtmlText:str = "'<body>' + messageHtml + '</body>'")
-		(var htmlText:str = "isTranslated ? translatedHtmlText : originalHtmlMessage")
-		#
-	)
-	
-	#(macro trace "mutePrefName in TTChat_PREFS")
-
-	# Mod
-	(bind visible "isVisible")
-	#
-
-	(dispatch evHideInfotip args="{}" (bind trigger "isMouseActive") (event "evMenuItemClicked") (event "evNewMessageEvent"))
-
-	(style (width = "COMBAT_LOG_MESSAGE_WIDTH"))
-
-	# Mod
-	(controller $Tooltip (renderer = 'TTChat_BattlePlayerTooltip')
-		(args
-			_playerEntity	= "playerEntity"
-			_originalMessage= "tooltipChat"
-		)
-		(macro DEFAULT_TOOLTIP_BEHAVIOUR "0")
-		(cache=false)
-	)
-	#
-
-	(controller $Tooltip (renderer = 'ContextMenuPlayer')
-		(args _playerEntity="playerEntity" _selfPlayer="selfPlayer")
-		(macro DEFAULT_MENU_BEHAVIOUR "evHideInfotip" "1")
-		(cache=false)
-	)
-
-	(element DockSubmenuItem _selected="contextMenuVisible"
-		(class $FullsizeAbsolute)
-		(style (bind hitTest "isContextMenuAvailable"))
-	)
-
-	# Mod
-    (block
-		(bind visible "!isSysLogMessage")
+	(element CombatChatMuteButton "isInputFocused" "!enableBattleChat"
 		(style
-			#(marginTop = "5px")
-			(marginBottom = "-5px")
-			(marginLeft = 4px)
-			(flow = "horizontal")
-			(width = 100%)
-			(align = "middle|left")
-		)
-		(tf
-			(class $TTChat_ShipInfoTextAutoSpy)
-			(bind text "tier")
-			(bind visible "isShipTierVisible")
-			(style
-				(bind textColor "nameColor")
-			)
-		)
-		(tf
-			(class $TTChat_ShipInfoTextAutoSpy)
-			(bind text "shipName")
-			(bind visible "isShipNameVisible")
-			(style
-				(bind textColor "nameColor")
-			)
-		)
-		(element ShipMarkerIconSimple "playerEntity"
-			(style
-				(width = "SHIP_ICON_SIZE.WIDTH")
-				(height = "SHIP_ICON_SIZE.HEIGHT")
-				(marginTop = -4px)
-				(marginBottom = -4px)
-				(pivotX = 50%)
-				(bind scaleX "isEnemy ? -1 : 1")
-			)
-			(bind visible "isShipIconVisible")
-		)
-		(tf
-			(class $TTChat_ShipInfoTextAutoSpy)
-			(bind text "playerName + ' :'")
-			(bind visible "isPlayerNameVisible || isClanNameVisible")
-			(style
-				(bind textColor "nameColor")
-				(width = 100%)
-				(elideMode = true)
-			)
+			(position = "absolute")
+			(right = "XXS")
+			(bottom = -27px)
 		)
 	)
-	#
-
-	(tf
-		(style (width = 100%) (marginTop = -1) (marginLeft = 4) (marginRight = 4) (leading = -3) (fontSize = 15) (hitTest = false)
-			(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
+	(block
+		(style
+			(position = "absolute")
+			(right = -20px) (bottom = 6px)
 		)
-		
-		(class $FontFamilyDefault)
-		(bind htmlText "htmlText")
-        # Mod
-		(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
-        #
+		(element VoiceChatOutgoingIcon)
 	)
 )
 
-(def element TTChat_CombatLogMessageRendererTTaro (_messageEntity:gfx) layout=true
+# battle\combat_log\combat_log.unbound
+(def element TTChat_CombatLogMessageRenderer(_messageEntity:gfx, _userPrefsNum:gfx=null) layout=true
 	(scope
 		(event evHideInfotip)
 
@@ -551,16 +411,27 @@
 		(var selfPlayer:gfx = "$datahub.getSingleEntity(CC.accountSelf)")
 
 		# Mod
-		(macro TTChat_GET_CHAT_MOD_SCOPE)
+		(macro TT_GET_PREF_BOOL _varName="'isShipNameVisible'" 		_pref="TTChat_PREFS.SHIP_NAME_VISIBLE")
+		(macro TT_GET_PREF_BOOL _varName="'isShipIconVisible'" 		_pref="TTChat_PREFS.SHIP_ICON_VISIBLE")
+		(macro TT_GET_PREF_BOOL _varName="'isShipTierVisible'" 		_pref="TTChat_PREFS.SHIP_TIER_VISIBLE")
+		(macro TT_GET_PREF_BOOL _varName="'isBoldFont'" 			_pref="TTChat_PREFS.BOLD_FONT")
 
-		(var translatedHtmlText:str = "'<body>' + message + '</body>'")
-		(var htmlText:str = "isTranslated ? translatedHtmlText : originalHtmlMessage")
+		(var messageComponent:gfx = "_messageEntity.battleChatAndLogMessage")
+
+		(var avatarComponent:gfx = "playerEntity ? playerEntity.avatar : null")
+		(var shipNameUpper:str = "avatarComponent ? avatarComponent.ship.ref.ship.nameUpper : ''")
+		(var subType:str = "avatarComponent ? avatarComponent.ship.ref.ship.subtype : ''")
+		(var tier:str = "avatarComponent ? avatarComponent.ship.ref.ship.levelRome : ''")
+
+		(var dataComponent:gfx = "_messageEntity.hasComponent(CC.mods_DataComponent) ? _messageEntity.mods_DataComponent : null" (event "_messageEntity.evAdded"))
+		(var replacementData:dict = "dataComponent && dataComponent.data ? dataComponent.data : null" (event "dataComponent.evDataChanged"))
+		(var isChatReplacementAvailable:bool = "replacementData")
+		(var tooltipMessage:str = "isChatReplacementAvailable ? messageComponent.message : null")
+		(var replacementHtmlMessage:str = "'message' in replacementData ? replacementData.message : null")
+		(var originalHtmlMessage:str = "messageComponent.htmlText")
+		(var htmlMessage:str = "isChatReplacementAvailable ? replacementHtmlMessage : originalHtmlMessage")
 		#
 	)
-	
-	# Mod
-	(bind visible "isVisible")
-	#
 
 	(dispatch evHideInfotip args="{}" (bind trigger "isMouseActive") (event "evMenuItemClicked") (event "evNewMessageEvent"))
 
@@ -570,7 +441,7 @@
 	(controller $Tooltip (renderer = 'TTChat_BattlePlayerTooltip')
 		(args
 			_playerEntity	= "playerEntity"
-			_originalMessage= "tooltipChat"
+			_originalMessage= "tooltipMessage"
 		)
 		(macro DEFAULT_TOOLTIP_BEHAVIOUR "0")
 		(cache=false)
@@ -590,96 +461,54 @@
 
 	# Mod
 	(block
-		(class $FullsizeAbsolute)
-		(style
-			(backgroundColor = "0xFF000000 + chatColor")
-			(width = 2px)
-			(height = "100% - 10px")
-			(vcenter = "0%")
-			(hitTest = false)
-		)
-	)
-
-    (block $enabled="!isSysLogMessage"
 		(style
 			(width = 100%)
-			(marginLeft = 4px)
-			(marginBottom = 4px)
-			(marginTop = 4px)
-			(hitTest = false)
-			(vgap = 3px)
+			(marginLeft = 4)
+			(marginRight = 4)
+			(marginTop = 1px)
+			(marginBottom = 1px)
 		)
-		(block
-			#(bind visible "isShipNameVisible || isShipIconVisible || isShipTierVisible")
+		(hblock
+			(bind visible "!isSysLogMessage && (isShipNameVisible || isShipIconVisible || isShipTierVisible)")
 			(style
 				(width = 100%)
-				(flow = "horizontal")
 				(align = "middle|left")
-				#(marginBottom = -8px)
+				(marginBottom = -6px)
 			)
+			# Ship Name
 			(tf
-				(class $TTChat_ShipInfoTextTTaro)
+				(class $TTChat_ShipInfoText)
 				(bind text "shipNameUpper")
 				(bind visible "isShipNameVisible")
-				(style
-					(bind textColor "nameColor")
-				)
 			)
-			(element ShipMarkerIconSimple "playerEntity"
-				(style
-					(width = "SHIP_ICON_SIZE.WIDTH")
-					(height = "SHIP_ICON_SIZE.HEIGHT")
-					(marginTop = -14px)
-					(marginBottom = -14px)
-					(pivotX = 50%)
-					(bind scaleX "isEnemy ? -1 : 1")
-				)
+			# Ship Icon
+			(element TTChat_ShipIcon _subType="subType"
 				(bind visible "isShipIconVisible")
 			)
+			# Tier
 			(tf
-				(class $TTChat_ShipInfoTextTTaro)
+				(class $TTChat_ShipInfoText)
 				(bind text "tier")
 				(bind visible "isShipTierVisible")
-				(style
-					(bind textColor "nameColor")
-				)
 			)
 		)
+
+		# Main
 		(tf
-			(class $TTChat_PlayerInfoTextTTaro)
-			(bind text "playerName")
-			(bind visible "isPlayerNameVisible || isClanNameVisible")
 			(style
-				(bind textColor "nameColor")
-				#(marginBottom = -8px)
-			)
-		)
-		(tf
-			(class $TTChat_ShipInfoTextTTaro)
-			(style (width = 100%) (marginTop = 2px) (marginRight = 4) (leading = -3) (fontSize = 15) (hitTest = false)
+				(width = 100%)
+				(leading = -3)
+				(fontSize = 15)
+				(hitTest = false)
 				(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
 			)
 			
-			(class $FontFamilyDefault)
-			(bind htmlText "htmlText")
-			# Mod
-			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
-			#
+			(bind class "isBoldFont ? '$FontFamilyDefaultBold' : '$FontFamilyDefault'")
+			(bind htmlText "htmlMessage")
+			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlMessage" init=true)
 		)
 	)
 	#
-	(tf $enabled="isSysLogMessage"
-		(class $TTChat_ShipInfoTextTTaro)
-		(style (width = 100%) (marginBottom = 4px) (marginTop = 4px) (marginLeft = 4) (marginRight = 4) (leading = -3) (fontSize = 15) (hitTest = false)
-			(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
-		)
-		
-		(class $FontFamilyDefault)
-		(bind htmlText "htmlText")
-        # Mod
-		(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
-        #
-	)
 )
 
 # tooltip\tooltip_player_battle.unbound
@@ -818,19 +647,40 @@
 
 		(block
 			(bind visible "_originalMessage")
-			(style (width = 100%))
+			(style
+				(width = 100%)
+				(marginTop = 15px)
+			)
 			(tf
-				(class $TTChat_ShipInfoTextTTaro)
-				(style (width = 100%) (marginTop = 15px) (leading = -3) (fontSize = 15) (hitTest = false)
+				(style
+					(width = 100%)
+					(leading = -3)
+					(fontSize = 15)
 					(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
 				)
 				
 				(class $FontFamilyDefault)
+				(class $FontColorDefault)
 				(bind htmlText "_originalMessage")
 				# Mod
 				(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="_originalMessage" init=true)
 				#
 			)
+		)
+	)
+)
+
+(def element TTChat_ShipIcon(_subType:str)
+	(style
+		(width = 27px)
+		(height = 0px)
+		(align = "middle|center")
+	)
+	(block
+		(style
+			(width = "27px")
+			(height = 27)
+			(bind backgroundImage "'url:../battle_hud/markers/ship/icon_white_' + toLower(_subType) + '.png'")
 		)
 	)
 )
