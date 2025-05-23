@@ -6,7 +6,8 @@ try:
 except:
     pass
 
-import xml.etree.ElementTree as ET
+import xml
+ET =  xml.etree.ElementTree
 
 def logInfo(*args):
     data = [str(i) for i in args]
@@ -100,7 +101,6 @@ class TTaroChatExporter(object):
             entity = dataHub.getEntityCollections('battleChatAndLogMessage')[-1]
             comp = entity[CC.battleChatAndLogMessage]
             if isPlayerChat(comp.playerId, comp.type) and comp.message not in RPF_MESSAGE_TO_DIRECTION:
-                self._createEntity()
                 self.__exportChat(entity.id, comp)
 
     def __exportChat(self, entityId, comp):
