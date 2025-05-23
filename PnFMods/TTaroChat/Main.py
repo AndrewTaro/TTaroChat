@@ -71,7 +71,7 @@ def getUserPref(key, default, rType):
     return rType(rawValue)
 
 
-class TTaroChatTranslator(object):
+class TTaroChatExporter(object):
     def __init__(self):
         self._entityIds = []
         self._chatEntity = None
@@ -130,7 +130,7 @@ class TTaroChatTranslator(object):
             ui.deleteUiElement(entityId)
 
 
-gTTaroChatTranslator = TTaroChatTranslator()
+gTTaroChatExporter = TTaroChatExporter()
 
 
 class TTaroChatFilter(object):
