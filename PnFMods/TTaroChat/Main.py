@@ -128,12 +128,12 @@ class TTaroChatExporter(object):
         if res and res.get('response') == 200:
             message = str(res.get('data'))
             if message:
-                message = self.__replaceSecondFontTag(origHtmlMessage, message)
-                self._createEntity(entityId, message)
+                htmlMessage = self.__replaceSecondFontTag(origHtmlMessage, message)
+                self._createEntity(entityId, message, htmlMessage)
 
-    def _createEntity(self, entityId, message):
+    def _createEntity(self, entityId, message, htmlMessage):
         compId = 'modTTaroChat_{}'.format(entityId)
-        ui.addDataComponentWithId(entityId, compId, {'message': message})
+        ui.addDataComponentWithId(entityId, compId, {'message': message, 'htmlMessage': htmlMessage})
 
         self._entityIds.append(entityId)
 
