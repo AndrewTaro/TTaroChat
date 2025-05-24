@@ -469,7 +469,7 @@
 			(marginBottom = 1px)
 		)
 		(hblock
-			(bind visible "!isSysLogMessage && (isShipNameVisible || isShipIconVisible || isShipTierVisible)")
+			(bind visible "!isSysLogMessage && avatarComponent && (isShipNameVisible || isShipIconVisible || isShipTierVisible)")
 			(style
 				(width = 100%)
 				(align = "middle|left")
