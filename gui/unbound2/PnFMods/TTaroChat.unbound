@@ -1,41 +1,20 @@
 (def constant TT_CHAT_INSTALLED true) # For modconfig
 
 # Depends on Sender
-(def constant TTChat_NAME_COLOR_PRESET [
-	# Roslich
-	{
-		ALLY		: 0x3fbf8c,
-		DIVISION	: 0xd9ae57,
-		ENEMY		: 0xbf2900,
-		PLAYER		: 0x3fbf8c,
-		TEAMKILLER	: 0xff96ca,
-		DEFAULT		: 0xd9d9d9,
-	},
-	# AutoSpy
-	{
-		ALLY		: 0x4ce8aa,
-		DIVISION	: 0xffcc66,
-		ENEMY		: 0xff3600,
-		PLAYER		: 0xffffff,
-		TEAMKILLER	: 0xff96ca,
-		DEFAULT		: 0xd9d9d9,
-	},
-	# TTaro
-	{
-		ALLY		: 0x3fbf8c,
-		DIVISION	: 0xd9ae57,
-		ENEMY		: 0xbf2900,
-		PLAYER		: 0x3fbf8c,
-		TEAMKILLER	: 0xff96ca,
-		DEFAULT		: 0xd9d9d9,
-	},
-])
+(def constant TTChat_NAME_COLORS {
+	ALLY		: 0x3fbf8c,
+	DIVISION	: 0xd9ae57,
+	ENEMY		: 0xbf2900,
+	PLAYER		: 0x3fbf8c,
+	TEAMKILLER	: 0xff96ca,
+	DEFAULT		: 0xd9d9d9,
+})
 
 # Depends on Chat Destination
-(def constant TTChat_CHAT_COLOR {
-	ALLY		: 0x4ce8aa,
-	DIVISION	: 0xffcc66,
-	ALL			: 0xffffff,
+(def constant TTChat_CHANNEL_COLORS {
+	"SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.GENERAL"	: 0xffffff,
+	"SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.TEAM"		: 0x4ce8aa,
+	"SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.DIVISION"	: 0xffcc66,
 	DEFAULT		: 0xffffff,
 })
 
@@ -106,8 +85,14 @@
 	},
 ])
 
-(def css $TTChat_ShipInfoText()
+(def css $TTChat_SenderInfoTextBold()
 	(extends $FontFamilyDefaultBold)
+	(extends $FontColorDefault)
+	(fontSize = 12)
+)
+
+(def css $TTChat_SenderInfoText()
+	(extends $FontFamilyDefault)
 	(extends $FontColorDefault)
 	(fontSize = 12)
 )
@@ -398,7 +383,13 @@
 		(var isBot:bool = "playerEntity && playerEntity.avatar.isBot")
 
 		(var relationComponent:gfx = "playerEntity ? playerEntity.relation : null")
-		(var isSelf:number = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.SELF")
+		# Mod
+		(var isSelf:bool = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.SELF")
+		(var isAlly:bool = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.ALLY")
+		(var isTeamKiller:bool = "isAlly && playerEntity ? playerEntity.avatar.tkStatus : false")
+		(var isEnemy:bool = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.ENEMY")
+		(var isInMyDivision:bool = "playerEntity && playerEntity.hasComponent(CC.divisionMember) ? playerEntity.divisionMember.isInSameDivision : false")
+		#
 		(var isSysLogMessage:bool = "playerEntity == null")
 
 		(var isContextMenuAvailable:bool = "!(isSelf || isSysLogMessage || isBot)")
@@ -411,25 +402,61 @@
 		(var selfPlayer:gfx = "$datahub.getSingleEntity(CC.accountSelf)")
 
 		# Mod
-		(macro TT_GET_PREF_BOOL _varName="'isShipNameVisible'" 		_pref="TTChat_PREFS.SHIP_NAME_VISIBLE")
-		(macro TT_GET_PREF_BOOL _varName="'isShipIconVisible'" 		_pref="TTChat_PREFS.SHIP_ICON_VISIBLE")
-		(macro TT_GET_PREF_BOOL _varName="'isShipTierVisible'" 		_pref="TTChat_PREFS.SHIP_TIER_VISIBLE")
-		(macro TT_GET_PREF_BOOL _varName="'isBoldFont'" 			_pref="TTChat_PREFS.BOLD_FONT")
+		(macro TT_GET_PREF_BOOL _varName="'isShipInfoBoldFont'"		_pref="TTChat_PREFS.SHIP_INFO.BOLD_FONT")
+		(macro TT_GET_PREF_BOOL _varName="'isShipNameVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.NAME")
+		(macro TT_GET_PREF_BOOL _varName="'isShipIconVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.ICON")
+		(macro TT_GET_PREF_BOOL _varName="'isShipTierVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.TIER")
+
+		(macro TT_GET_PREF_BOOL _varName="'isPlayerInfoBoldFont'"	_pref="TTChat_PREFS.PLAYER_INFO.BOLD_FONT")
+		(macro TT_GET_PREF_BOOL _varName="'isPlayerNameVisible'"	_pref="TTChat_PREFS.PLAYER_INFO.NAME")
+		(macro TT_GET_PREF_BOOL _varName="'isClanNameVisible'" 		_pref="TTChat_PREFS.PLAYER_INFO.CLAN_TAG")
+
+		(var shipInfoClass:str = "isShipInfoBoldFont ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
 
 		(var messageComponent:gfx = "_messageEntity.battleChatAndLogMessage")
 
+		# Ship Info
 		(var avatarComponent:gfx = "playerEntity ? playerEntity.avatar : null")
-		(var shipNameUpper:str = "avatarComponent ? avatarComponent.ship.ref.ship.nameUpper : ''")
-		(var subType:str = "avatarComponent ? avatarComponent.ship.ref.ship.subtype : ''")
-		(var tier:str = "avatarComponent ? avatarComponent.ship.ref.ship.levelRome : ''")
+		(var ship:gfx = "avatarComponent ? avatarComponent.ship.ref.ship : null" (event "avatarComponent.evShipRefChanged"))
+		(var shipNameUpper:str = "ship ? ship.nameUpper : ''")
+		(var subType:str = "ship ? ship.subtype : ''")
+		(var tier:str = "ship ? ship.levelRome : ''")
+
+		# Player Info
+		(var playerName:str = "avatarComponent	? isClanNameVisible	? avatarComponent.name
+																	: avatarComponent.pureName
+												: '' "
+		)
 
 		(var dataComponent:gfx = "_messageEntity.hasComponent(CC.mods_DataComponent) ? _messageEntity.mods_DataComponent : null" (event "_messageEntity.evAdded"))
 		(var replacementData:dict = "dataComponent && dataComponent.data ? dataComponent.data : null" (event "dataComponent.evDataChanged"))
 		(var isChatReplacementAvailable:bool = "replacementData")
 		(var tooltipMessage:str = "isChatReplacementAvailable ? messageComponent.message : null")
-		(var replacementHtmlMessage:str = "'message' in replacementData ? replacementData.message : null")
+		
+		(var replacementHtmlMessage:str = "'htmlMessage' in replacementData ? replacementData.htmlMessage : null")
 		(var originalHtmlMessage:str = "messageComponent.htmlText")
 		(var htmlMessage:str = "isChatReplacementAvailable ? replacementHtmlMessage : originalHtmlMessage")
+
+		(var originalMessage:str = "messageComponent.message")
+		(var replacementMessage:str = "'message' in replacementData ? replacementData.message : null")
+		(var message:str = "isChatReplacementAvailable ? replacementMessage : originalMessage")
+
+		(var targetChannelId:str = "messageComponent.targetChannelId")
+		(var channelColor:number = "targetChannelId in TTChat_CHANNEL_COLORS ? TTChat_CHANNEL_COLORS[targetChannelId] : TTChat_CHANNEL_COLORS.DEFAULT")
+
+		(var nameColor:number = "	isInMyDivision	? TTChat_NAME_COLORS.DIVISION	:
+									isSelf			? TTChat_NAME_COLORS.PLAYER		:
+									isTeamKiller	? TTChat_NAME_COLORS.TEAMKILLER	:
+									isAlly			? TTChat_NAME_COLORS.ALLY		:
+									isEnemy			? TTChat_NAME_COLORS.ENEMY		
+													: TTChat_NAME_COLORS.DEFAULT"
+			watch=false
+		)
+
+		(var test:str = "'<body><font color = \'#3fbf8c\'><span class=\'bold\'>[JC]ChottoGPT: </span></font><font color = \'#4ce8aa\'>que es esto?</font></body>'")
+		(var nameHtml:str = "'<font color=\'#' + toHex(nameColor, 6) + '\'>' + (isPlayerInfoBoldFont ? '<span class=\'bold\'>' : '') + playerName + ': ' + (isPlayerInfoBoldFont ? '</span>' : '') + '</font>'")
+		(var contentHtml:str = "'<font color=\'#' + toHex(channelColor, 6) + '\'>' + message + '</font>'")
+		(var formattedHtml:str = "'<body>' + nameHtml + contentHtml + '</body>'")
 		#
 	)
 
@@ -467,9 +494,10 @@
 			(marginRight = 4)
 			(marginTop = 1px)
 			(marginBottom = 1px)
+			(hitTest = false)
 		)
 		(hblock
-			(bind visible "!isSysLogMessage && avatarComponent && (isShipNameVisible || isShipIconVisible || isShipTierVisible)")
+			(bind visible "!isSysLogMessage && (isShipNameVisible || isShipIconVisible || isShipTierVisible)")
 			(style
 				(width = 100%)
 				(align = "middle|left")
@@ -477,7 +505,7 @@
 			)
 			# Ship Name
 			(tf
-				(class $TTChat_ShipInfoText)
+				(bind class "shipInfoClass")
 				(bind text "shipNameUpper")
 				(bind visible "isShipNameVisible")
 			)
@@ -487,7 +515,7 @@
 			)
 			# Tier
 			(tf
-				(class $TTChat_ShipInfoText)
+				(bind class "shipInfoClass")
 				(bind text "tier")
 				(bind visible "isShipTierVisible")
 			)
@@ -499,13 +527,12 @@
 				(width = 100%)
 				(leading = -3)
 				(fontSize = 15)
-				(hitTest = false)
-				(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
+				(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66} .bold {font-family:$WWSDefaultFontBold}'")
 			)
 			
-			(bind class "isBoldFont ? '$FontFamilyDefaultBold' : '$FontFamilyDefault'")
-			(bind htmlText "htmlMessage")
-			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlMessage" init=true)
+			(class $FontFamilyDefault)
+			(bind htmlText "formattedHtml")
+			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="formattedHtml" init=true)
 		)
 	)
 	#
