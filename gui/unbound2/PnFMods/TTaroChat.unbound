@@ -457,6 +457,8 @@
 		(var nameHtml:str = "'<font color=\'#' + toHex(nameColor, 6) + '\'>' + (isPlayerInfoBoldFont ? '<span class=\'bold\'>' : '') + playerName + ': ' + (isPlayerInfoBoldFont ? '</span>' : '') + '</font>'")
 		(var contentHtml:str = "'<font color=\'#' + toHex(channelColor, 6) + '\'>' + message + '</font>'")
 		(var formattedHtml:str = "'<body>' + nameHtml + contentHtml + '</body>'")
+
+		(var finalHtml:str = "isSysLogMessage ? originalHtmlMessage : formattedHtml")
 		#
 	)
 
@@ -531,8 +533,8 @@
 			)
 			
 			(class $FontFamilyDefault)
-			(bind htmlText "formattedHtml")
-			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="formattedHtml" init=true)
+			(bind htmlText "finalHtml")
+			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="finalHtml" init=true)
 		)
 	)
 	#
