@@ -1,5 +1,6 @@
 # TTaro Chat
 This mod enables the customization of chat, including the player's ship name, icon, etc.
+
 It also allows you to export the chat messages so that external applications can process, and import custom text to display it.
 
 # Install
