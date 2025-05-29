@@ -453,7 +453,6 @@
 			watch=false
 		)
 
-		(var test:str = "'<body><font color = \'#3fbf8c\'><span class=\'bold\'>[JC]ChottoGPT: </span></font><font color = \'#4ce8aa\'>que es esto?</font></body>'")
 		(var nameHtml:str = "'<font color=\'#' + toHex(nameColor, 6) + '\'>' + (isPlayerInfoBoldFont ? '<span class=\'bold\'>' : '') + playerName + ': ' + (isPlayerInfoBoldFont ? '</span>' : '') + '</font>'")
 		(var contentHtml:str = "'<font color=\'#' + toHex(channelColor, 6) + '\'>' + message + '</font>'")
 		(var formattedHtml:str = "'<body>' + nameHtml + contentHtml + '</body>'")
