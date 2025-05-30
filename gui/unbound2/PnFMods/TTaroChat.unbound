@@ -88,12 +88,14 @@
 (def css $TTChat_SenderInfoTextBold()
 	(extends $FontFamilyDefaultBold)
 	(extends $FontColorDefault)
+	(extends $FontEnableReadability)
 	(fontSize = 12)
 )
 
 (def css $TTChat_SenderInfoText()
 	(extends $FontFamilyDefault)
 	(extends $FontColorDefault)
+	(extends $FontEnableReadability)
 	(fontSize = 12)
 )
 
