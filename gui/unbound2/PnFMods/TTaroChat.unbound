@@ -2,6 +2,9 @@
 
 (def constant TTChat_ELEMENT_NAME 'TTChat')
 
+(def constant TTChat_BASE_HTML_BEGIN '<font color=\'#%(color)X\'><span class=\'%(weightClass)s\'><span class=\'%(sizeClass)s\'>')
+(def constant TTChat_BASE_HTML_END '</span></span></font>')
+
 # Depends on Sender
 (def constant TTChat_NAME_COLORS {
 	ALLY		: 0x3fbf8c,
@@ -531,16 +534,19 @@
 		(var selfPlayer:gfx = "$datahub.getSingleEntity(CC.accountSelf)")
 
 		# Mod
+		(macro TT_GET_PREF_NUMBER _varName="'shipInfoFontSize'"		_pref="TTChat_PREFS.SHIP_INFO.FONT_SIZE")
 		(macro TT_GET_PREF_BOOL _varName="'isShipInfoBoldFont'"		_pref="TTChat_PREFS.SHIP_INFO.BOLD_FONT")
 		(macro TT_GET_PREF_BOOL _varName="'isShipNameVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.NAME")
 		(macro TT_GET_PREF_BOOL _varName="'isShipIconVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.ICON")
 		(macro TT_GET_PREF_BOOL _varName="'isShipTierVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.TIER")
 
+		(macro TT_GET_PREF_NUMBER _varName="'playerInfoFontSize'"	_pref="TTChat_PREFS.PLAYER_INFO.FONT_SIZE")
 		(macro TT_GET_PREF_BOOL _varName="'isPlayerInfoBoldFont'"	_pref="TTChat_PREFS.PLAYER_INFO.BOLD_FONT")
 		(macro TT_GET_PREF_BOOL _varName="'isPlayerNameVisible'"	_pref="TTChat_PREFS.PLAYER_INFO.NAME")
 		(macro TT_GET_PREF_BOOL _varName="'isClanNameVisible'" 		_pref="TTChat_PREFS.PLAYER_INFO.CLAN_TAG")
 
-		(var shipInfoClass:str = "isShipInfoBoldFont ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
+		(macro TT_GET_PREF_NUMBER _varName="'chatFontSize'"			_pref="TTChat_PREFS.FONT_SIZE")
+		(macro TT_GET_PREF_BOOL _varName="'isChatBoldFont'"			_pref="TTChat_PREFS.BOLD_FONT")
 
 		(var messageComponent:gfx = "_messageEntity.battleChatAndLogMessage")
 
@@ -573,17 +579,23 @@
 		(var targetChannelId:str = "messageComponent.targetChannelId")
 		(var channelColor:number = "targetChannelId in TTChat_CHANNEL_COLORS ? TTChat_CHANNEL_COLORS[targetChannelId] : TTChat_CHANNEL_COLORS.DEFAULT")
 
-		(var nameColor:number = "	isInMyDivision	? TTChat_NAME_COLORS.DIVISION	:
-									isSelf			? TTChat_NAME_COLORS.PLAYER		:
-									isTeamKiller	? TTChat_NAME_COLORS.TEAMKILLER	:
-									isAlly			? TTChat_NAME_COLORS.ALLY		:
-									isEnemy			? TTChat_NAME_COLORS.ENEMY		
+		(var playerInfoColor:number = "	isInMyDivision	? TTChat_NAME_COLORS.DIVISION	:
+										isSelf			? TTChat_NAME_COLORS.PLAYER		:
+										isTeamKiller	? TTChat_NAME_COLORS.TEAMKILLER	:
+										isAlly			? TTChat_NAME_COLORS.ALLY		:
+										isEnemy			? TTChat_NAME_COLORS.ENEMY		
 													: TTChat_NAME_COLORS.DEFAULT"
 			watch=false
 		)
+		# Cannot use `subst` because our dearest friend snprintf() fails to format the string if one of the strings contains unescaped single quote '
+		(var playerInfoWeight:str = "isPlayerInfoBoldFont ? 'bold' : 'normal'")
+		(var shipInfoWeight:str = "isShipInfoBoldFont ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
+		(var chatWeight:str = "isChatBoldFont ? 'bold' : 'normal'")
+		(var playerInfoSize:str = "subst('size-%d', [playerInfoFontSize])")
+		(var chatSize:str = "subst('size-%d', [chatFontSize])")
 
-		(var nameHtml:str = "'<font color=\'#' + toHex(nameColor, 6) + '\'>' + (isPlayerInfoBoldFont ? '<span class=\'bold\'>' : '') + playerName + ': ' + (isPlayerInfoBoldFont ? '</span>' : '') + '</font>'")
-		(var contentHtml:str = "'<font color=\'#' + toHex(channelColor, 6) + '\'>' + message + '</font>'")
+		(var nameHtml:str = "	subst(TTChat_BASE_HTML_BEGIN, [], {color: playerInfoColor,	weightClass: playerInfoWeight,	sizeClass: playerInfoSize})	+ playerName + ': ' + TTChat_BASE_HTML_END")
+		(var contentHtml:str = "subst(TTChat_BASE_HTML_BEGIN, [], {color: channelColor,		weightClass: chatWeight,		sizeClass: chatSize})		+ message 			+ TTChat_BASE_HTML_END")
 		(var formattedHtml:str = "'<body>' + nameHtml + contentHtml + '</body>'")
 
 		(var finalHtml:str = "isSysLogMessage ? originalHtmlMessage : formattedHtml")
@@ -635,9 +647,12 @@
 			)
 			# Ship Name
 			(tf
-				(bind class "shipInfoClass")
+				(bind class "shipInfoWeight")
 				(bind text "shipNameUpper")
 				(bind visible "isShipNameVisible")
+				(style
+					(bind fontSize "shipInfoFontSize")
+				)
 			)
 			# Ship Icon
 			(element TTChat_ShipIcon _subType="subType"
@@ -645,9 +660,12 @@
 			)
 			# Tier
 			(tf
-				(bind class "shipInfoClass")
+				(bind class "shipInfoWeight")
 				(bind text "tier")
 				(bind visible "isShipTierVisible")
+				(style
+					(bind fontSize "shipInfoFontSize")
+				)
 			)
 		)
 
@@ -656,8 +674,24 @@
 			(style
 				(width = 100%)
 				(leading = -3)
-				(fontSize = 15)
-				(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66} .bold {font-family:$WWSDefaultFontBold}'")
+				(styleSheet="'
+					.ally {color:#4ce8aa}
+					.enemy {color:#ff3600}
+					.self {color:#ffcc66}
+					.bold {font-family:$WWSDefaultFontBold}
+					.normal {font-family:$WWSDefaultFont}
+					.size-10 {font-size:10}
+					.size-11 {font-size:11}
+					.size-12 {font-size:12}
+					.size-13 {font-size:13}
+					.size-14 {font-size:14}
+					.size-15 {font-size:15}
+					.size-16 {font-size:16}
+					.size-17 {font-size:17}
+					.size-18 {font-size:18}
+					.size-19 {font-size:19}
+					.size-20 {font-size:20}
+				'")
 			)
 			
 			(class $FontFamilyDefault)
