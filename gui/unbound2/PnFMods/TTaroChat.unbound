@@ -3,6 +3,7 @@
 (def constant TTChat_ELEMENT_NAME 'TTChat')
 
 (def constant TTChat_BASE_HTML_BEGIN '<font color=\'#%(color)X\'><span class=\'%(weightClass)s\'><span class=\'%(sizeClass)s\'>')
+# AS3 htmlText does not support multiple classes in a single tag, apparently.
 (def constant TTChat_BASE_HTML_END '</span></span></font>')
 
 # Depends on Sender
@@ -168,6 +169,9 @@
 		(bind width "stageWidth")
 		(bind height "stageHeight")
 	)
+
+	# (element TTChat_MarkerMessageContent)
+	# Experimental
 
 	(block
 
@@ -570,7 +574,6 @@
 		
 		(var replacementHtmlMessage:str = "'htmlMessage' in replacementData ? replacementData.htmlMessage : null")
 		(var originalHtmlMessage:str = "messageComponent.htmlText")
-		(var htmlMessage:str = "isChatReplacementAvailable ? replacementHtmlMessage : originalHtmlMessage")
 
 		(var originalMessage:str = "messageComponent.message")
 		(var replacementMessage:str = "'message' in replacementData ? replacementData.message : null")
@@ -587,13 +590,15 @@
 													: TTChat_NAME_COLORS.DEFAULT"
 			watch=false
 		)
-		# Cannot use `subst` because our dearest friend snprintf() fails to format the string if one of the strings contains unescaped single quote '
+		
 		(var playerInfoWeight:str = "isPlayerInfoBoldFont ? 'bold' : 'normal'")
 		(var shipInfoWeight:str = "isShipInfoBoldFont ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
 		(var chatWeight:str = "isChatBoldFont ? 'bold' : 'normal'")
 		(var playerInfoSize:str = "subst('size-%d', [playerInfoFontSize])")
 		(var chatSize:str = "subst('size-%d', [chatFontSize])")
 
+		# Cannot use `subst` to embed the message because our dearest friend snprintf() fails to format the string if it contains unescaped single quote '
+		# "Do not say \"don't\"" (because it breaks the feeling of C code)
 		(var nameHtml:str = "	subst(TTChat_BASE_HTML_BEGIN, [], {color: playerInfoColor,	weightClass: playerInfoWeight,	sizeClass: playerInfoSize})	+ playerName + ': ' + TTChat_BASE_HTML_END")
 		(var contentHtml:str = "subst(TTChat_BASE_HTML_BEGIN, [], {color: channelColor,		weightClass: chatWeight,		sizeClass: chatSize})		+ message 			+ TTChat_BASE_HTML_END")
 		(var formattedHtml:str = "'<body>' + nameHtml + contentHtml + '</body>'")
@@ -916,5 +921,64 @@
 				(bind trigger "isMouseActive")
 			)
 		)
+	)
+)
+
+(def element TTChat_MarkerMessageContent()
+	(scope
+		(var battleChatAndLogMessages:gfx = "$datahub.getCollection(CC.battleChatAndLogMessage).child('sorted')")
+		(var battleChatAndLogMessagesItems:gfx = "battleChatAndLogMessages.items" (event "battleChatAndLogMessages.evAdded"))
+	)
+	(class $FullsizeAbsolute)
+
+	(controller $FxInstance renderer='TTChat_MarkerMessageRenderer' lifetime=20
+		(args _messageEntity="battleChatAndLogMessagesItems[battleChatAndLogMessagesItems.length - 1]")
+		(bindcall create (event "battleChatAndLogMessages.evAdded"))
+	)
+)
+
+(def element TTChat_MarkerMessageRenderer(_messageEntity:gfx)
+	(scope
+		(var dataComponent:gfx = "_messageEntity.hasComponent(CC.mods_DataComponent) ? _messageEntity.mods_DataComponent : null" (event "_messageEntity.evAdded"))
+		(var replacementData:dict = "dataComponent && dataComponent.data ? dataComponent.data : null" (event "dataComponent.evDataChanged"))
+		(var isChatReplacementAvailable:bool = "replacementData")
+
+		(var replacementHtmlMessage:str = "'htmlMessage' in replacementData ? replacementData.htmlMessage : null")
+		(var htmlMessage:str = "isChatReplacementAvailable ? replacementHtmlMessage : _messageEntity.battleChatAndLogMessage.htmlText")
+
+		(var playerId:number = "_messageEntity.battleChatAndLogMessage.playerId")
+		(var playerEntity:gfx = "$datahub.getPrimaryEntity(CC.avatar, playerId)")
+
+		(event evPositionUpdate)
+		(var screenPosition:gfx = "playerEntity && playerEntity.hasComponent(CC.screenPosition) ? playerEntity.screenPosition : null" (event "playerEntity.evAdded")(event "playerEntity.evRemoved"))
+		(var posX:number = "screenPosition ? screenPosition.position.x : 0" (event "evPositionUpdate"))
+		(var posY:number = "screenPosition ? screenPosition.position.y : 0" (event "evPositionUpdate"))
+	)
+
+	(dispatch evPositionUpdate args="{}" (bind enabled "screenPosition && !screenPosition.behindCamera") (event "evEnterFrame"))
+
+	(style
+		(position = "absolute")
+		(bind left "posX")
+		(bind top "posY")
+		(width = 100px)
+		(pivotX = 50%)
+	)
+
+	(block
+		(style
+			(backgroundImage = 'url:../battle_hud/combat_log/chat_background.png')
+			(class $FullsizeAbsolute)
+		)
+	)
+
+	(tf
+		(style (width = 100%) (marginTop = -1) (marginLeft = 4) (marginRight = 4) (leading = -3) (fontSize = 15) (hitTest = false)
+			(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
+		)
+		
+		(class $FontFamilyDefault)
+		(bind htmlText "htmlMessage")
+		(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlMessage" init=true)
 	)
 )
