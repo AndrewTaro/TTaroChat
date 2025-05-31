@@ -1,5 +1,11 @@
 (def constant TT_CHAT_INSTALLED true) # For modconfig
 
+(def constant TTChat_ELEMENT_NAME 'TTChat')
+
+(def constant TTChat_BASE_HTML_BEGIN '<font color=\'#%(color)X\'><span class=\'%(weightClass)s\'><span class=\'%(sizeClass)s\'>')
+# AS3 htmlText does not support multiple classes in a single tag, apparently.
+(def constant TTChat_BASE_HTML_END '</span></span></font>')
+
 # Depends on Sender
 (def constant TTChat_NAME_COLORS {
 	ALLY		: 0x3fbf8c,
@@ -100,7 +106,11 @@
 )
 
 # battle\combat_log\combat_log.unbound
-(def element CombatLogPanel() layout=true
+(def element CombatLogPanel()
+	(visible = false)
+)
+
+(def element TTChat_CombatLogPanel() layout=true
 	(scope
 		(var battleInfoWatcher:gfx = "$datahub.getFirstWatcher(CC.battleInfo)")
 		(var battleInfoEntity:gfx = "battleInfoWatcher.entity" (event "battleInfoWatcher.event"))
@@ -121,20 +131,128 @@
 
 		# Mod
 		(macro TT_GET_USERPREF)
+
+		# From main hud
+		(var avatarEntity:gfx = "$datahub.getSingleEntity(CC.playerAvatar)")
+		(var healthComponent:gfx = "avatarEntity.health")
+		(var isAlive:bool = "healthComponent ? healthComponent.isAlive : false" (event "healthComponent.evIsAliveChanged"))
+		(var isSubmarineHudVisible:bool = "avatarEntity.avatar ? (avatarEntity.avatar.ship.ref.ship.subtype == ShipTypes.SUBMARINE) : false")
+
+		(macro GET_PREF 'hearFoghorn' "'sound.foghorn.enabled'")
+
+		(var selfVehicleEntity:gfx = "$datahub.getSingleEntity(CC.selfVehicle)")
+		(var submarine:gfx = "isSubmarineHudVisible ? selfVehicleEntity.submarine : null")
+		(var depthIndex:number = "submarine ? submarine.depthIndex : SC.Battle.DEPTH_STATE.SURFACE" (event "submarine.evDepthIndexChanged"))
+		(var isUnderwater:number = "depthIndex > SC.Battle.DEPTH_STATE.PERISCOPE")
+		#
+
+		(macro TT_GET_PREF_BOOL		_varName="'isDragDropDisabled'"		_pref="TTChat_PREFS.DISABLE_DRAGDROP")
+		(macro TT_GET_PREF_NUMBER	_varName="'widthScale'"				_pref="TTChat_PREFS.WIDTH_SCALE")
+		(macro TT_GET_PREF_NUMBER	_varName="'heightScale'"			_pref="TTChat_PREFS.HEIGHT_SCALE")
+
+		(var chatBoxWidth:number = "COMBAT_LOG_WIDTH * widthScale")
+		(var chatBoxHeight:number = "COMBAT_LOG_HEIGHT * heightScale")
+
+		(var draggableSize:number = "32px - 5px") # There is 5px margin in the image
+
+		(macro STAGE_SIZE)
+		(var defaultPosY:number = "stageHeight - 326 - chatBoxHeight - COMBAT_LOG_INPUT_HEIGHT") # 326 from main hud
+		(var defaultPos:dict = "{'positionX': 10, 'positionY': max(0, defaultPosY)}")
+		(macro DRAGGABLE_GET_DROP_POSITION _elementName="TTChat_ELEMENT_NAME" _defaultPosition="defaultPos")
+
+		(var mouseComponent:gfx = "$datahub.getSingleComponent(CC.mouse)")
+		(var isMouseActive:bool = "mouseComponent.active" (event "mouseComponent.evActiveChanged"))
 		#
 	)
-	# Mod
-	(controller $Instance renderer='TTChat_CombatLogPanelContent'
-		(bind enabled "!isTeamSpectator")
-		(args
-			_userPrefsNum="_userPrefsNum"
-		)
+
+	(style
+		(bind width "stageWidth")
+		(bind height "stageHeight")
 	)
-	#
+
+	# (element TTChat_MarkerMessageContent)
+	# Experimental
+
+	(block
+
+		(style
+			(position = "absolute")
+			(bind left "dragPosX")
+			(bind top "dragPosY")
+			
+			(bind width "chatBoxWidth")
+			(bind height "chatBoxHeight")
+		)
+
+		# Config/Draggable
+		(block
+			(style
+				(position = "absolute")
+				(top = 100%)
+				(left = 100%)
+			)
+			
+			# Draggable Icon
+			(controller $Instance renderer='TTChat_DraggableGripIcon'
+				(bind enabled "!isDragDropDisabled")
+				(args
+					_elementName="TTChat_ELEMENT_NAME"
+					_defaultPosition="defaultPos"
+					_screenBoundsOffset="{left: chatBoxWidth, top: chatBoxHeight}"
+				)
+			)
+
+			# Config
+			(element TT_ConfigButtonElement _modIndex = "16" _tooltipPosition="borderNoTrack" _tooltipAlign="innerTop|outerRight"
+				(style
+					(bind left "isDragDropDisabled ? 0px : 30px")
+				)
+			)
+		)
+
+		# Mod
+		(controller $Instance renderer='TTChat_CombatLogPanelContent'
+			(bind enabled "!isTeamSpectator")
+			(args
+				_userPrefsNum = "_userPrefsNum"
+				_chatBoxWidth = "chatBoxWidth"
+				_chatBoxHeight= "chatBoxHeight"
+			)
+		)
+		#
+
+		# From main hud
+		(block
+			(style
+				(hitTest = false)
+				(position = "absolute")
+				(bottom = 0)
+				# Mod
+				(width = 100%)
+				#
+				(alpha = "isUnderwater ? 0 : 1")
+			)
+			(controller $Animation
+				(bindcall play to={alpha:1} action="kill" duration=0.2 (bind enabled "!isUnderwater"))
+				(bindcall play to={alpha:0} action="kill" duration=0.2 (bind enabled "isUnderwater"))
+			)
+			(controller $Instance renderer='FogHornIndicator'
+				(bind enabled "isAlive && hearFoghorn")
+				# Mod
+				(exprs
+					(style
+						(width = 100%)
+					)
+				)
+				#
+			)
+		)
+		#
+	)
 )
 
 # battle\combat_log\combat_log.unbound
-(def element TTChat_CombatLogPanelContent (_userPrefsNum:gfx=null) layout=true
+(def element TTChat_CombatLogPanelContent (_chatBoxWidth:number, _chatBoxHeight:number, _userPrefsNum:gfx=null) layout=true
 	(scope
 		(event evNewMessageEvent)
 
@@ -191,6 +309,11 @@
 										isTeamChat			? tr('IDS_BATTLE_CHAT_TEAM') + ':' :
 										isDivisionChat		? tr('IDS_LOBBY_CHAT_DIVISION') + ':'
 															: tr('IDS_BATTLE_CHAT_GENERAL') + ':'")
+
+		# Mod
+		(var chatContentWidth:number = "_chatBoxWidth - COMBAT_LOG_SCROLL_BAR_WIDTH") # COMBAT_LOG_MESSAGE_WIDTH
+		(var chatInputWidth:number = "_chatBoxWidth + (COMBAT_LOG_INPUT_WIDTH - COMBAT_LOG_WIDTH)") # BG has 3px white margins on both sides
+		#
 	)
 
 	(bindcall externalCall 'inputMapping.onAction' "['battleChat.shown', { }]" init=false watch=false on='addedToStage')
@@ -215,12 +338,15 @@
 
 	(dispatch evHideChatEvent args="{}" delay="COMBAT_LOG_HIDE_DELAY" reset=true (event "evDelayedHideChatEvent"))
 
-	
+
 	(block
 		(macro CHANGE_ALPHA_BY_TRIGGER_ANIM _duration="0.25" _fromAlpha=0 _toAlpha=1 _triggerExpression="isChatExpanded")
 
 		(style
-			(width = "COMBAT_LOG_WIDTH") (height = "COMBAT_LOG_HEIGHT")
+			# Mod
+			(bind width "_chatBoxWidth")
+			(bind height "_chatBoxHeight")
+			#
 			(align = "bottom")
 		)
 
@@ -263,7 +389,7 @@
 				(name = 'txa_output')
 
 				(style
-					(width = "COMBAT_LOG_WIDTH")
+					(bind width "_chatBoxWidth")
 				)
 
 				(controller $Repeat renderer='TTChat_CombatLogMessageRenderer' name='battleChat'
@@ -271,6 +397,11 @@
 					(bind count "battleChatAndLogMessagesCount")
 					# Mod
 					(args "battleChatAndLogMessagesItems[$index]" _userPrefsNum="_userPrefsNum")
+					(exprs
+						(style
+							(bind width "chatContentWidth")
+						)
+					)
 					#
 				)
 			)
@@ -283,9 +414,12 @@
 		(macro MOUSE_EVENTS_DISPATCHER "'chatInput_'")
 
 		(style
-			(width = "COMBAT_LOG_INPUT_WIDTH") (height = "COMBAT_LOG_INPUT_HEIGHT")
+			# Mod
+			(bind width "chatInputWidth")
+			(height = "COMBAT_LOG_INPUT_HEIGHT")
 			(marginLeft = -3px)
 			(bind hitTest "!isChatDisabled && enableBattleChat")
+			#
 		)
 
 		(macro CHANGE_ALPHA_BY_TRIGGER_ANIM _duration="0.1" _fromAlpha=0.8 _toAlpha=1 _triggerExpression="chatInputActive")
@@ -404,16 +538,19 @@
 		(var selfPlayer:gfx = "$datahub.getSingleEntity(CC.accountSelf)")
 
 		# Mod
+		(macro TT_GET_PREF_NUMBER _varName="'shipInfoFontSize'"		_pref="TTChat_PREFS.SHIP_INFO.FONT_SIZE")
 		(macro TT_GET_PREF_BOOL _varName="'isShipInfoBoldFont'"		_pref="TTChat_PREFS.SHIP_INFO.BOLD_FONT")
 		(macro TT_GET_PREF_BOOL _varName="'isShipNameVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.NAME")
 		(macro TT_GET_PREF_BOOL _varName="'isShipIconVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.ICON")
 		(macro TT_GET_PREF_BOOL _varName="'isShipTierVisible'" 		_pref="TTChat_PREFS.SHIP_INFO.TIER")
 
+		(macro TT_GET_PREF_NUMBER _varName="'playerInfoFontSize'"	_pref="TTChat_PREFS.PLAYER_INFO.FONT_SIZE")
 		(macro TT_GET_PREF_BOOL _varName="'isPlayerInfoBoldFont'"	_pref="TTChat_PREFS.PLAYER_INFO.BOLD_FONT")
 		(macro TT_GET_PREF_BOOL _varName="'isPlayerNameVisible'"	_pref="TTChat_PREFS.PLAYER_INFO.NAME")
 		(macro TT_GET_PREF_BOOL _varName="'isClanNameVisible'" 		_pref="TTChat_PREFS.PLAYER_INFO.CLAN_TAG")
 
-		(var shipInfoClass:str = "isShipInfoBoldFont ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
+		(macro TT_GET_PREF_NUMBER _varName="'chatFontSize'"			_pref="TTChat_PREFS.FONT_SIZE")
+		(macro TT_GET_PREF_BOOL _varName="'isChatBoldFont'"			_pref="TTChat_PREFS.BOLD_FONT")
 
 		(var messageComponent:gfx = "_messageEntity.battleChatAndLogMessage")
 
@@ -437,7 +574,6 @@
 		
 		(var replacementHtmlMessage:str = "'htmlMessage' in replacementData ? replacementData.htmlMessage : null")
 		(var originalHtmlMessage:str = "messageComponent.htmlText")
-		(var htmlMessage:str = "isChatReplacementAvailable ? replacementHtmlMessage : originalHtmlMessage")
 
 		(var originalMessage:str = "messageComponent.message")
 		(var replacementMessage:str = "'message' in replacementData ? replacementData.message : null")
@@ -446,17 +582,25 @@
 		(var targetChannelId:str = "messageComponent.targetChannelId")
 		(var channelColor:number = "targetChannelId in TTChat_CHANNEL_COLORS ? TTChat_CHANNEL_COLORS[targetChannelId] : TTChat_CHANNEL_COLORS.DEFAULT")
 
-		(var nameColor:number = "	isInMyDivision	? TTChat_NAME_COLORS.DIVISION	:
-									isSelf			? TTChat_NAME_COLORS.PLAYER		:
-									isTeamKiller	? TTChat_NAME_COLORS.TEAMKILLER	:
-									isAlly			? TTChat_NAME_COLORS.ALLY		:
-									isEnemy			? TTChat_NAME_COLORS.ENEMY		
+		(var playerInfoColor:number = "	isInMyDivision	? TTChat_NAME_COLORS.DIVISION	:
+										isSelf			? TTChat_NAME_COLORS.PLAYER		:
+										isTeamKiller	? TTChat_NAME_COLORS.TEAMKILLER	:
+										isAlly			? TTChat_NAME_COLORS.ALLY		:
+										isEnemy			? TTChat_NAME_COLORS.ENEMY		
 													: TTChat_NAME_COLORS.DEFAULT"
 			watch=false
 		)
+		
+		(var playerInfoWeight:str = "isPlayerInfoBoldFont ? 'bold' : 'normal'")
+		(var shipInfoWeight:str = "isShipInfoBoldFont ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
+		(var chatWeight:str = "isChatBoldFont ? 'bold' : 'normal'")
+		(var playerInfoSize:str = "subst('size-%d', [playerInfoFontSize])")
+		(var chatSize:str = "subst('size-%d', [chatFontSize])")
 
-		(var nameHtml:str = "'<font color=\'#' + toHex(nameColor, 6) + '\'>' + (isPlayerInfoBoldFont ? '<span class=\'bold\'>' : '') + playerName + ': ' + (isPlayerInfoBoldFont ? '</span>' : '') + '</font>'")
-		(var contentHtml:str = "'<font color=\'#' + toHex(channelColor, 6) + '\'>' + message + '</font>'")
+		# Cannot use `subst` to embed the message because our dearest friend snprintf() fails to format the string if it contains unescaped single quote '
+		# "Do not say \"don't\"" (because it breaks the feeling of C code)
+		(var nameHtml:str = "	subst(TTChat_BASE_HTML_BEGIN, [], {color: playerInfoColor,	weightClass: playerInfoWeight,	sizeClass: playerInfoSize})	+ playerName + ': ' + TTChat_BASE_HTML_END")
+		(var contentHtml:str = "subst(TTChat_BASE_HTML_BEGIN, [], {color: channelColor,		weightClass: chatWeight,		sizeClass: chatSize})		+ message 			+ TTChat_BASE_HTML_END")
 		(var formattedHtml:str = "'<body>' + nameHtml + contentHtml + '</body>'")
 
 		(var finalHtml:str = "isSysLogMessage ? originalHtmlMessage : formattedHtml")
@@ -465,7 +609,7 @@
 
 	(dispatch evHideInfotip args="{}" (bind trigger "isMouseActive") (event "evMenuItemClicked") (event "evNewMessageEvent"))
 
-	(style (width = "COMBAT_LOG_MESSAGE_WIDTH"))
+	# (style (width = "COMBAT_LOG_MESSAGE_WIDTH"))
 
 	# Mod
 	(controller $Tooltip (renderer = 'TTChat_BattlePlayerTooltip')
@@ -508,9 +652,12 @@
 			)
 			# Ship Name
 			(tf
-				(bind class "shipInfoClass")
+				(bind class "shipInfoWeight")
 				(bind text "shipNameUpper")
 				(bind visible "isShipNameVisible")
+				(style
+					(bind fontSize "shipInfoFontSize")
+				)
 			)
 			# Ship Icon
 			(element TTChat_ShipIcon _subType="subType"
@@ -518,9 +665,12 @@
 			)
 			# Tier
 			(tf
-				(bind class "shipInfoClass")
+				(bind class "shipInfoWeight")
 				(bind text "tier")
 				(bind visible "isShipTierVisible")
+				(style
+					(bind fontSize "shipInfoFontSize")
+				)
 			)
 		)
 
@@ -529,8 +679,24 @@
 			(style
 				(width = 100%)
 				(leading = -3)
-				(fontSize = 15)
-				(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66} .bold {font-family:$WWSDefaultFontBold}'")
+				(styleSheet="'
+					.ally {color:#4ce8aa}
+					.enemy {color:#ff3600}
+					.self {color:#ffcc66}
+					.bold {font-family:$WWSDefaultFontBold}
+					.normal {font-family:$WWSDefaultFont}
+					.size-10 {font-size:10}
+					.size-11 {font-size:11}
+					.size-12 {font-size:12}
+					.size-13 {font-size:13}
+					.size-14 {font-size:14}
+					.size-15 {font-size:15}
+					.size-16 {font-size:16}
+					.size-17 {font-size:17}
+					.size-18 {font-size:18}
+					.size-19 {font-size:19}
+					.size-20 {font-size:20}
+				'")
 			)
 			
 			(class $FontFamilyDefault)
@@ -712,5 +878,107 @@
 			(height = 27)
 			(bind backgroundImage "'url:../battle_hud/markers/ship/icon_white_' + toLower(_subType) + '.png'")
 		)
+	)
+)
+
+(def element TTChat_DraggableGripIcon(_elementName:str, _defaultPosition:dict, _screenBoundsOffset:dict)
+	(scope
+		(var draggableSize:number = "32px - 5px") # There is 5px margin in the image
+
+		(var mouseComponent:gfx = "$datahub.getSingleComponent(CC.mouse)")
+		(var isMouseActive:bool = "mouseComponent.active" (event "mouseComponent.evActiveChanged"))
+	)
+
+	(element ModDraggableElement
+		_elementName="_elementName"
+		_defaultPosition="_defaultPosition"
+		_screenBoundsOffset="_screenBoundsOffset"
+	)
+
+	# Grip
+	(block
+		(style
+			(hitTest = false)
+			(height = "draggableSize")
+			(width = "draggableSize")
+			(alpha = "isMouseActive ? 1 : 0.3")
+			(margin = 1px)
+			(backgroundImage = 'url:../cursors/move_hand.dds')
+		)
+		(controller $Animation
+			(bindcall play
+				to	="{alpha: 0.3}"
+				duration=0.15
+				action="killAll"
+				(bind enabled "!isMouseActive")
+				(bind trigger "isMouseActive")
+			)
+			(bindcall play
+				to	="{alpha: 1.0}"
+				duration=0.15
+				action="killAll"
+				(bind enabled "isMouseActive")
+				(bind trigger "isMouseActive")
+			)
+		)
+	)
+)
+
+(def element TTChat_MarkerMessageContent()
+	(scope
+		(var battleChatAndLogMessages:gfx = "$datahub.getCollection(CC.battleChatAndLogMessage).child('sorted')")
+		(var battleChatAndLogMessagesItems:gfx = "battleChatAndLogMessages.items" (event "battleChatAndLogMessages.evAdded"))
+	)
+	(class $FullsizeAbsolute)
+
+	(controller $FxInstance renderer='TTChat_MarkerMessageRenderer' lifetime=20
+		(args _messageEntity="battleChatAndLogMessagesItems[battleChatAndLogMessagesItems.length - 1]")
+		(bindcall create (event "battleChatAndLogMessages.evAdded"))
+	)
+)
+
+(def element TTChat_MarkerMessageRenderer(_messageEntity:gfx)
+	(scope
+		(var dataComponent:gfx = "_messageEntity.hasComponent(CC.mods_DataComponent) ? _messageEntity.mods_DataComponent : null" (event "_messageEntity.evAdded"))
+		(var replacementData:dict = "dataComponent && dataComponent.data ? dataComponent.data : null" (event "dataComponent.evDataChanged"))
+		(var isChatReplacementAvailable:bool = "replacementData")
+
+		(var replacementHtmlMessage:str = "'htmlMessage' in replacementData ? replacementData.htmlMessage : null")
+		(var htmlMessage:str = "isChatReplacementAvailable ? replacementHtmlMessage : _messageEntity.battleChatAndLogMessage.htmlText")
+
+		(var playerId:number = "_messageEntity.battleChatAndLogMessage.playerId")
+		(var playerEntity:gfx = "$datahub.getPrimaryEntity(CC.avatar, playerId)")
+
+		(event evPositionUpdate)
+		(var screenPosition:gfx = "playerEntity && playerEntity.hasComponent(CC.screenPosition) ? playerEntity.screenPosition : null" (event "playerEntity.evAdded")(event "playerEntity.evRemoved"))
+		(var posX:number = "screenPosition ? screenPosition.position.x : 0" (event "evPositionUpdate"))
+		(var posY:number = "screenPosition ? screenPosition.position.y : 0" (event "evPositionUpdate"))
+	)
+
+	(dispatch evPositionUpdate args="{}" (bind enabled "screenPosition && !screenPosition.behindCamera") (event "evEnterFrame"))
+
+	(style
+		(position = "absolute")
+		(bind left "posX")
+		(bind top "posY")
+		(width = 100px)
+		(pivotX = 50%)
+	)
+
+	(block
+		(style
+			(backgroundImage = 'url:../battle_hud/combat_log/chat_background.png')
+			(class $FullsizeAbsolute)
+		)
+	)
+
+	(tf
+		(style (width = 100%) (marginTop = -1) (marginLeft = 4) (marginRight = 4) (leading = -3) (fontSize = 15) (hitTest = false)
+			(styleSheet="'.ally {color:#4ce8aa} .enemy {color:#ff3600} .self {color:#ffcc66}'")
+		)
+		
+		(class $FontFamilyDefault)
+		(bind htmlText "htmlMessage")
+		(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlMessage" init=true)
 	)
 )
