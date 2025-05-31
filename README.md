@@ -1,7 +1,14 @@
 # TTaro Chat
 This mod enables the customization of chat.
 
-It can also export chat messages for external applications to process, and import custom text to display.
+It can also export chat messages for external applications to process and import custom text to display.
+
+# Customizable Features
+- Drag&Drop
+- Size of Chat Box
+- Font Size and Weight
+- Player's Ship Info
+etc.
 
 # Install
 1. Download a zip.
