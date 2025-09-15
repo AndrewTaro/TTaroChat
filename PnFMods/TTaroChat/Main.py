@@ -110,30 +110,19 @@ class TTaroChatExporter(object):
 
         def callback(res):
             # In case an expernal app returns a response to the exported chat.
-            return self.__onResponseReceived(entityId, comp.htmlText, res)
+            return self.__onResponseReceived(entityId, res)
         
         web.fetchURL(url, callback, '', 5, 'GET')
 
-    def __replaceSecondFontTag(self, origHtmlMessage, newMessage):
-        root = ET.fromstring(origHtmlMessage)
-        fonts = root.findall('font')
-        if len(fonts) >= 2:
-            fonts[1].text = newMessage
-        else:
-            logError('Not enough font tags in html message', origHtmlMessage)
-        
-        return ET.tostring(root, encoding='utf-8').decode('utf-8')
-
-    def __onResponseReceived(self, entityId, origHtmlMessage, res):
+    def __onResponseReceived(self, entityId, res):
         if res and res.get('response') == 200:
             message = str(res.get('data'))
             if message:
-                htmlMessage = self.__replaceSecondFontTag(origHtmlMessage, message)
-                self._createEntity(entityId, message, htmlMessage)
+                self._createEntity(entityId, message)
 
-    def _createEntity(self, entityId, message, htmlMessage):
+    def _createEntity(self, entityId, message):
         compId = 'modTTaroChat_{}'.format(entityId)
-        ui.addDataComponentWithId(entityId, compId, {'message': message, 'htmlMessage': htmlMessage})
+        ui.addDataComponentWithId(entityId, compId, {'message': message})
 
         self._entityIds.append(entityId)
 
