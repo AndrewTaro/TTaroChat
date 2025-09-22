@@ -748,11 +748,10 @@
 														: ''
 		")
 		(var senderShip:str = "
-			originalSenderShip	? 
-				(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
-				(isShipTierVisible ? (tier + ' ') : '') +
-				(isShipNameVisible ? shipNameUpper : '')
-								: ''
+			originalSenderShip	?	(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
+									(isShipTierVisible ? (tier + ' ') : '') +
+									(isShipNameVisible ? shipNameUpper : '')
+								:	''
 		")
 
 		# senderText Name
@@ -780,10 +779,17 @@
 		(var messageColorModded:str = "originalSenderShip ? '#ffffff' : messageColor")
 		(var messageHtml:str = "subst(TTChat_BASE_HTML, [], {color: messageColorModded,	weight: messageFontWeight,	size: messageFontSize,	message: message})")
 		(var htmlText:str = "'<body>' + messageHtml + '</body>'")
+
+		(var bgColor:number = "toNumber('0xff' + messageColor[1] + messageColor[2] + messageColor[3] + messageColor[4] + messageColor[5] + messageColor[6])")
+
+		(var isQuickCommandToMe:bool = "messageComponent.type == -5 && 'class=\'self\'' in originalMessage")
+		#(event evAddedToStage)
 		#
 	)
 
 	(macro TTChat_CONTEXT_MENU)
+
+	#(dispatch evAddedToStage args="{}" on=addedToStage)
 
 	# Mod
 	(block
@@ -796,7 +802,7 @@
 			(hitTest = false)
 		)
 
-		# BG
+		# Channel Color
 		(block
 			(style
 				(height = 100%)
@@ -804,8 +810,33 @@
 				(width = 2px)
 				(marginLeft = -3px)
 				(backgroundSize = "fill")
-				(bind backgroundColor "toNumber('0xff' + messageColor[1] + messageColor[2] + messageColor[3] + messageColor[4] + messageColor[5] + messageColor[6])")
+				(bind backgroundColor "bgColor")
 			)
+		)
+
+		# Ping BG
+		(block
+			(bind visible "isQuickCommandToMe")
+			(style
+				(height = 100%)
+				(width = 100%)
+				(position = "absolute")
+				(backgroundColor = 0x33FEE75C)
+				(backgroundSize = "fill")
+			)
+			# (controller $Animation
+			# 	(bindcall play
+			# 		duration = 1
+			# 		delay    = 0
+			# 		keyframes=
+			# 			"[
+			# 				{percent:  0%,	to:{alpha:0}},
+			# 				{percent: 50%,	to:{alpha:2}},
+			# 				{percent:100%,	to:{alpha:1}}
+			# 			]"
+			# 		(event "evAddedToStage")
+			# 	)
+			# )
 		)
 
 		# Ship
@@ -814,7 +845,7 @@
 			(style
 				(width = 100%)
 				(leading = -3)
-				(marginTop = -5px)
+				(marginTop = -3px)
 				(marginBottom = -5px)
 				(styleSheet = "TTChat_STYLE_SHEET")
 			)
