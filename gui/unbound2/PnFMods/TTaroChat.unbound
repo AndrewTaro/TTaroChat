@@ -217,6 +217,11 @@
 	(fontSize = 12)
 )
 
+(def css $TTChat_MessageText()
+	(extends $FontFamilyDefault)
+	(extends $FontEnableReadability)
+)
+
 # battle\combat_log\combat_log.unbound
 (def element CombatLogPanel()
 	(visible = false)
@@ -718,7 +723,7 @@
 				(styleSheet = "TTChat_STYLE_SHEET")
 			)
 			
-			(class $FontFamilyDefault)
+			(class $TTChat_MessageText)
 			(bind htmlText "htmlText")
 			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
 		)
@@ -821,8 +826,17 @@
 				(height = 100%)
 				(width = 100%)
 				(position = "absolute")
-				(backgroundColor = 0x33FEE75C)
-				(backgroundSize = "fill")
+				(paddingRight = 4px)
+				# Wrap the BG size to match it with the context menu BG.
+			)
+			(block
+				(style
+					(height = 100%)
+					(width = 100%)
+					(position = "absolute")
+					(backgroundColor = 0x33FEE75C)
+					(backgroundSize = "fill")
+				)
 			)
 			# (controller $Animation
 			# 	(bindcall play
@@ -845,12 +859,12 @@
 			(style
 				(width = 100%)
 				(leading = -3)
-				(marginTop = -3px)
+				(marginTop = -4px)
 				(marginBottom = -5px)
 				(styleSheet = "TTChat_STYLE_SHEET")
 			)
 			
-			(class $FontFamilyDefault)
+			(class $TTChat_MessageText)
 			(bind htmlText "senderHtml")
 			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="senderHtml" init=true)
 		)
@@ -865,7 +879,7 @@
 				(marginBottom = -3px)
 			)
 			
-			(class $FontFamilyDefault)
+			(class $TTChat_MessageText)
 			(bind htmlText "htmlText")
 			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
 		)
@@ -952,7 +966,7 @@
 				(styleSheet = "TTChat_STYLE_SHEET")
 			)
 			
-			(class $FontFamilyDefault)
+			(class $TTChat_MessageText)
 			(bind htmlText "htmlText")
 			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
 		)
