@@ -168,9 +168,11 @@
 	(var messageFontWeight:str = "isMessageBold ? 'bold' : 'normal'")
 
 	# Becomes a valid string only when the message is substituted
+	# subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: originalMessage}) +
+	# They fixed the issue with singe quot but added 127 char limit?
 	(var originalHtmlForTooltip:str = "substMessage ?
 		'<body>' +
-			subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: originalMessage}) +
+			'<font color=\"' + messageColor + '\" size=\"' + messageFontSize +'\"><span class=\"' + messageFontWeight + '\">' + originalMessage + '</span></font>' +
 		'</body>'
 
 		: null
@@ -690,15 +692,13 @@
 								senderName + marginText + senderShip + ': '
 		")
 
-		# ~~Cannot use `subst` to embed the message because our dearest friend snprintf() fails to format the string if it contains unescaped single quote '~~
-		# ~~"Do not say \"don't\"" (because it breaks the feeling of C code)~~
-		#
-		# Apparently they fixed it? How? Like, They read this? I don't think so but am happy anyway
+		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
 		(var senderHtml:str = "senderText && senderText != ': '
-			? subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
+			? '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font>'
 			: ''
 		")
-		(var messageHtml:str = "subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: message})")
+		# subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: message})
+		(var messageHtml:str = "'<font color=\"' + messageColor + '\" size=\"' + messageFontSize +'\"><span class=\"' + messageFontWeight + '\">' + message + '</span></font>'")
 		(var htmlText:str = "'<body>' + senderHtml + messageHtml + '</body>'")
 		#
 	)
@@ -773,28 +773,21 @@
 										senderName + marginText + senderShip + ': '
 		")
 
-		# ~~Cannot use `subst` to embed the message because our dearest friend snprintf() fails to format the string if it contains unescaped single quote '~~
-		# ~~"Do not say \"don't\"" (because it breaks the feeling of C code)~~
-		#
-		# Apparently they fixed it? How? Like, They read this? I don't think so but am happy anyway
+		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
 		(var senderHtml:str = "senderText && senderText != ': '
-					? '<body>' + subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText}) + '</body>'
+					? '<body><font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font></body>'
 					: ''
 		")
 		(var messageColorModded:str = "originalSenderShip ? '#ffffff' : messageColor")
-		(var messageHtml:str = "subst(TTChat_BASE_HTML, [], {color: messageColorModded,	weight: messageFontWeight,	size: messageFontSize,	message: message})")
-		(var htmlText:str = "'<body>' + messageHtml + '</body>'")
+		# (var messageHtml:str = "subst(TTChat_BASE_HTML, [], {color: messageColorModded,	weight: messageFontWeight,	size: messageFontSize,	message: message})")
+		(var htmlText:str = "'<body><font color=\"' + messageColorModded + '\" size=\"' + messageFontSize +'\"><span class=\"' + messageFontWeight + '\">' + message + '</span></font></body>'")
 
 		(var bgColor:number = "toNumber('0xff' + messageColor[1] + messageColor[2] + messageColor[3] + messageColor[4] + messageColor[5] + messageColor[6])")
 
 		(var isQuickCommandToMe:bool = "messageComponent.type == -5 && 'class=\'self\'' in originalMessage")
-		#(event evAddedToStage)
-		#
 	)
 
 	(macro TTChat_CONTEXT_MENU)
-
-	#(dispatch evAddedToStage args="{}" on=addedToStage)
 
 	# Mod
 	(block
@@ -902,15 +895,13 @@
 										: senderName + ': '
 		")
 
-		# ~~Cannot use `subst` to embed the message because our dearest friend snprintf() fails to format the string if it contains unescaped single quote '~~
-		# ~~"Do not say \"don't\"" (because it breaks the feeling of C code)~~
-		#
-		# Apparently they fixed it? How? Like, They read this? I don't think so but am happy anyway
+		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
 		(var senderHtml:str = "
-			senderText	? subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
+			senderText	? '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font>'
 						: ''
 		")
-		(var messageHtml:str = "subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: message})")
+		# subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: message})
+		(var messageHtml:str = "'<font color=\"' + messageColor + '\" size=\"' + messageFontSize +'\"><span class=\"' + messageFontWeight + '\">' + message + '</span></font>'")
 		(var htmlText:str = "'<body>' + senderHtml + messageHtml + '</body>'")
 		#
 	)
