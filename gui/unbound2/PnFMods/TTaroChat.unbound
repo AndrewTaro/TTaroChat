@@ -127,12 +127,16 @@
 	(macro TT_GET_PREF_BOOL		_varName="'isSenderNameBold'"		_pref="TTChat_PREFS.PLAYER_INFO.BOLD_FONT")
 	(macro TT_GET_PREF_BOOL		_varName="'isSenderNameVisible'"	_pref="TTChat_PREFS.PLAYER_INFO.NAME")
 	(macro TT_GET_PREF_BOOL		_varName="'isClanNameVisible'" 		_pref="TTChat_PREFS.PLAYER_INFO.CLAN_TAG")
+	(macro TT_GET_PREF_BOOL		_varName="'isSelfNameEnabled'"		_pref="TTChat_PREFS.PLAYER_INFO.MY_NAME")
 
 	(macro TT_GET_PREF_NUMBER	_varName="'messageFontSize'"		_pref="TTChat_PREFS.FONT_SIZE")
 	(macro TT_GET_PREF_BOOL		_varName="'isMessageBold'"			_pref="TTChat_PREFS.BOLD_FONT")
 
 	# Avatar
 	(var avatarComponent:gfx = "playerEntity ? playerEntity.avatar : null")
+
+	# Image Subst
+	(var imageSubsts:gfx = "battleChatEntity.battleChatAndLog.substitutions")
 
 	# Relation
 	(var isAlly:bool = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.ALLY")
@@ -147,6 +151,18 @@
 	(var senderColor:str = "messageComponent.senderColor")
 	(var originalSenderName:str = "messageComponent.senderName")
 	(var originalSenderShip:str = "messageComponent.senderShip")
+
+	(var isSystemMessage:bool = "messageComponent.targetChannelId == SC.Channel.BATTLE_CHAT_CHANNEL_TYPE.SYSTEM")
+
+	# Sender Info
+	# Much as I'd love to avoid using subst, this is the only way to format string in ub2
+	(var senderName:str = "
+		isSenderNameVisible ? isSelf && !isSelfNameEnabled	? subst('%.' + (tr('IDS_BATTLE_CHAT_YOU').length - 1) +'s', [tr('IDS_BATTLE_CHAT_YOU')]) + ' ' :
+							  avatarComponent				? avatarComponent.isBot || isClanNameVisible ? avatarComponent.name
+																										 : avatarComponent.pureName
+															: originalSenderName
+							: ''
+	")
 
 	# Ship Info
 	(var ship:gfx = "avatarComponent ? avatarComponent.ship.ref.ship : null" (event "avatarComponent.evShipRefChanged"))
@@ -166,6 +182,8 @@
 	(var senderFontWeight:str = "isSenderNameBold ? 'bold' : 'normal'")
 	(var shipInfoFontWeight:str = "isShipInfoBold ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
 	(var messageFontWeight:str = "isMessageBold ? 'bold' : 'normal'")
+	(var senderImageOffset:number = "round(senderFontSize / 15 * 5)") # 15: original font size, 5: original offset
+	(var messageImageOffset:number = "round(messageFontSize / 15 * 5)") # 15: original font size, 5: original offset
 
 	# Becomes a valid string only when the message is substituted
 	# subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: originalMessage}) +
@@ -520,6 +538,15 @@
 
 				(style
 					(bind width "_chatBoxWidth")
+					# (bind vgap "gapSize")
+					#
+					# Gap doesnt work here - The layout system updates it only when some other dimentions change.
+					# e.g. changing width/height of this block, changing the children width/height, etc.
+					#
+					# However, even if I forcibly apply the gap by momentarily manipulating the width,
+					# the scrollArea does not reflect the gaps which creates either an empty or blocked area.
+					#
+					# This is cursed
 				)
 
 				(controller $Repeat renderer='TTChat_CombatLogMessageWrapper' name='battleChat'
@@ -528,6 +555,7 @@
 					# Mod
 					(args
 						_messageEntity	= "battleChatAndLogMessagesItems[$index]"
+						_messagesCount	= "battleChatAndLogMessagesCount"
 						_userPrefsNum	= "_userPrefsNum"
 					)
 					(exprs
@@ -629,11 +657,21 @@
 	# )
 )
 
-(def element TTChat_CombatLogMessageWrapper (_messageEntity:gfx, _userPrefsNum:gfx=null) layout=true
+(def element TTChat_CombatLogMessageWrapper (_messageEntity:gfx, _messagesCount:number, _userPrefsNum:gfx=null) layout=true
 	(scope
 		(macro TT_GET_PREF_NUMBER	_varName="'styleIndexPref'"		_pref="TTChat_PREFS.STYLE_INDEX")
 		(var styleIndex:number = "styleIndexPref < TTChat_STYLE_INDEX_TO_RENDERER.length ? styleIndexPref : 0")
 		(var renderer:str = "TTChat_STYLE_INDEX_TO_RENDERER[styleIndex]")
+
+		# I have to manually implment the gap here because it refuses to work properly
+		(macro TT_GET_PREF_NUMBER	_varName="'gapSize'"		_pref="TTChat_PREFS.GAP_SIZE")
+		(var halfGap:number = "gapSize / 2")
+		(var mTop:number = "$index == 0 ? 0 : halfGap")
+		(var mBottom:number = "($index + 1) == _messagesCount ? 0 : halfGap")
+	)
+	(style
+		(bind marginTop "mTop")
+		(bind marginBottom " mBottom")
 	)
 	(controller $Instance
 		(bind renderer "renderer")
@@ -679,23 +717,16 @@
 		")
 
 		# senderText Name
-		(var senderName:str = "
-			isSenderNameVisible ? avatarComponent	? isClanNameVisible	? avatarComponent.name
-																		: avatarComponent.pureName
-													: originalSenderName
-								: ''
-		")
 		(var marginText:str = "senderName && senderShip && !isShipIconVisible ? ' ' : ''")
-		(var senderText:str = "	isSelf ? tr('IDS_BATTLE_CHAT_YOU') + ' ' :
-								!(senderName || senderShip) ? '' :
-								!senderShip && senderName ? senderName + ': ' :
-								senderName + marginText + senderShip + ': '
+		(var senderText:str = "!(senderName || senderShip)	? ''
+															: senderName + marginText + senderShip + ': '
 		")
 
 		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
-		(var senderHtml:str = "senderText && senderText != ': '
-			? '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font>'
-			: ''
+		# sender font size is disable if standard style is selected. Use message font size instead.
+		(var senderHtml:str = "
+			senderText	? '<font color=\"' + senderColor + '\" size=\"' + messageFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font>'
+						: ''
 		")
 		# subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: message})
 		(var messageHtml:str = "'<font color=\"' + messageColor + '\" size=\"' + messageFontSize +'\"><span class=\"' + messageFontWeight + '\">' + message + '</span></font>'")
@@ -725,7 +756,8 @@
 			
 			(class $TTChat_MessageText)
 			(bind htmlText "htmlText")
-			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
+			(bindcall substitute imageOffset="messageImageOffset" substitutionMap="imageSubsts" sourceText="htmlText" init=true)
+			# Can't use both of senderImageOffset and messageImageOffset because this is a single line message.
 		)
 	)
 	#
@@ -760,25 +792,17 @@
 		")
 
 		# senderText Name
-		(var senderName:str = "
-			isSenderNameVisible ? avatarComponent	? isClanNameVisible	? avatarComponent.name
-																		: avatarComponent.pureName
-													: originalSenderName
-								: ''
-		")
 		(var marginText:str = "senderName && senderShip && !isShipIconVisible ? ' ' : ''")
-		(var senderText:str = "isSelf	? tr('IDS_BATTLE_CHAT_YOU') + ' ' :
-										!(senderName || senderShip) ? '' :
-										!senderShip && senderName ? senderName + ': ' :
-										senderName + marginText + senderShip + ': '
+		(var senderText:str = "!(senderName || senderShip)	? ''
+															: senderName + marginText + senderShip + ': '
 		")
 
 		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
-		(var senderHtml:str = "senderText && senderText != ': '
-					? '<body><font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font></body>'
-					: ''
+		(var senderHtml:str = "
+			senderText	? '<body><font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font></body>'
+						: ''
 		")
-		(var messageColorModded:str = "originalSenderShip ? '#ffffff' : messageColor")
+		(var messageColorModded:str = "isSystemMessage ? messageColor : '#ffffff'")
 		# (var messageHtml:str = "subst(TTChat_BASE_HTML, [], {color: messageColorModded,	weight: messageFontWeight,	size: messageFontSize,	message: message})")
 		(var htmlText:str = "'<body><font color=\"' + messageColorModded + '\" size=\"' + messageFontSize +'\"><span class=\"' + messageFontWeight + '\">' + message + '</span></font></body>'")
 
@@ -852,14 +876,14 @@
 			(style
 				(width = 100%)
 				(leading = -3)
-				(marginTop = -4px)
+				(marginTop = -3px)
 				(marginBottom = -5px)
 				(styleSheet = "TTChat_STYLE_SHEET")
 			)
 			
 			(class $TTChat_MessageText)
 			(bind htmlText "senderHtml")
-			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="senderHtml" init=true)
+			(bindcall substitute imageOffset="senderImageOffset" substitutionMap="imageSubsts" sourceText="senderHtml" init=true)
 		)
 
 		# Main
@@ -874,7 +898,7 @@
 			
 			(class $TTChat_MessageText)
 			(bind htmlText "htmlText")
-			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
+			(bindcall substitute imageOffset="messageImageOffset" substitutionMap="imageSubsts" sourceText="htmlText" init=true)
 		)
 	)
 	#
@@ -885,19 +909,12 @@
 		(macro TTChat_GET_ORIGINAL_DATA)
 		(macro TTChat_GET_MOD_DATA)
 
-		# senderText Name
-		(var senderName:str = "avatarComponent	? isClanNameVisible	? avatarComponent.name
-																	: avatarComponent.pureName
-												: originalSenderName
-		")
-		(var senderText:str = "isSelf	? tr('IDS_BATTLE_CHAT_YOU') + ' '
-										: !(senderName && isSenderNameVisible) ? ''
-										: senderName + ': '
-		")
-
 		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
+		(var senderText:str = "senderName	? senderName + ': '
+											: ''
+		")
 		(var senderHtml:str = "
-			senderText	? '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font>'
+			senderName	? '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font>'
 						: ''
 		")
 		# subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: message})
@@ -959,7 +976,7 @@
 			
 			(class $TTChat_MessageText)
 			(bind htmlText "htmlText")
-			(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="htmlText" init=true)
+			(bindcall substitute imageOffset="messageImageOffset" substitutionMap="imageSubsts" sourceText="htmlText" init=true)
 		)
 	)
 	#
