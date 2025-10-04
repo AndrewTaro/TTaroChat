@@ -127,7 +127,7 @@
 	(macro TT_GET_PREF_BOOL		_varName="'isSenderNameBold'"		_pref="TTChat_PREFS.PLAYER_INFO.BOLD_FONT")
 	(macro TT_GET_PREF_BOOL		_varName="'isSenderNameVisible'"	_pref="TTChat_PREFS.PLAYER_INFO.NAME")
 	(macro TT_GET_PREF_BOOL		_varName="'isClanNameVisible'" 		_pref="TTChat_PREFS.PLAYER_INFO.CLAN_TAG")
-	(macro TT_GET_PREF_BOOL		_varName="'isSelfNameEnabled'"		_pref="TTChat_PREFS.PLAYER_INFO.MY_NAME")
+	(macro TT_GET_PREF_BOOL		_varName="'isOwnShipNameVisible'"	_pref="TTChat_PREFS.PLAYER_INFO.MY_SHIP")
 
 	(macro TT_GET_PREF_NUMBER	_varName="'messageFontSize'"		_pref="TTChat_PREFS.FONT_SIZE")
 	(macro TT_GET_PREF_BOOL		_varName="'isMessageBold'"			_pref="TTChat_PREFS.BOLD_FONT")
@@ -157,10 +157,10 @@
 	# Sender Info
 	# Much as I'd love to avoid using subst, this is the only way to format string in ub2
 	(var senderName:str = "
-		isSenderNameVisible ? isSelf && !isSelfNameEnabled	? subst('%.' + (tr('IDS_BATTLE_CHAT_YOU').length - 1) +'s', [tr('IDS_BATTLE_CHAT_YOU')]) + ' ' :
-							  avatarComponent				? avatarComponent.isBot || isClanNameVisible ? avatarComponent.name
-																										 : avatarComponent.pureName
-															: originalSenderName
+		isSenderNameVisible ? isSelf			? subst('%.' + (tr('IDS_BATTLE_CHAT_YOU').length - 1) +'s', [tr('IDS_BATTLE_CHAT_YOU')]) :
+							  avatarComponent	? avatarComponent.isBot || isClanNameVisible ? avatarComponent.name
+																							 : avatarComponent.pureName
+												: originalSenderName
 							: ''
 	")
 
@@ -171,18 +171,19 @@
 	(var tier:str = "ship ? ship.levelRome : ''")
 
 	# External Data
-	(var substDataComponent:gfx = "_messageEntity.hasComponent(CC.mods_DataComponent) ? _messageEntity.mods_DataComponent : null" (event "_messageEntity.evAdded"))
-	(var substData:dict = "substDataComponent && substDataComponent.data ? substDataComponent.data : null" (event "substDataComponent.evDataChanged"))
-	(var substMessage:str = "'message' in substData ? substData.message : null")
+	(var substMsgComponent:gfx = "_messageEntity.hasComponent(CC.mods_DataComponent) ? _messageEntity.mods_DataComponent : null" (event "_messageEntity.evAdded"))
+	(var substMsgData:dict = "substMsgComponent && substMsgComponent.data ? substMsgComponent.data : null" (event "substMsgComponent.evDataChanged"))
+	(var substMessage:str = "'message' in substMsgData ? substMsgData.message : null")
 
 	# Main Message
 	(var message:str = "substMessage ? substMessage : originalMessage")
 	
 	# Font Style
 	(var senderFontWeight:str = "isSenderNameBold ? 'bold' : 'normal'")
-	(var shipInfoFontWeight:str = "isShipInfoBold ? '$TTChat_SenderInfoTextBold' : '$TTChat_SenderInfoText'")
+	(var shipInfoFontWeight:str = "isShipInfoBold ? 'bold' : 'normal'")
 	(var messageFontWeight:str = "isMessageBold ? 'bold' : 'normal'")
 	(var senderImageOffset:number = "round(senderFontSize / 15 * 5)") # 15: original font size, 5: original offset
+	(var shipImageOffset:number = "round(shipInfoFontSize / 15 * 5)") # 15: original font size, 5: original offset
 	(var messageImageOffset:number = "round(messageFontSize / 15 * 5)") # 15: original font size, 5: original offset
 
 	# Becomes a valid string only when the message is substituted
@@ -709,11 +710,11 @@
 														: '5'
 		")
 		(var senderShip:str = "
-			originalSenderShip	? 
-				(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
-				(isShipTierVisible ? (tier + ' ') : '') +
-				(isShipNameVisible ? shipNameUpper : '')
-								: ''
+			originalSenderShip && (!isSelf || isOwnShipNameVisible)
+				?	(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
+					(isShipTierVisible ? (tier + ' ') : '') +
+					(isShipNameVisible ? shipNameUpper : '')
+				:	''
 		")
 
 		# senderText Name
@@ -785,23 +786,23 @@
 														: ''
 		")
 		(var senderShip:str = "
-			originalSenderShip	?	(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
-									(isShipTierVisible ? (tier + ' ') : '') +
-									(isShipNameVisible ? shipNameUpper : '')
-								:	''
+			originalSenderShip && (!isSelf || isOwnShipNameVisible)
+				?	(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
+					(isShipTierVisible ? (tier + ' ') : '') +
+					(isShipNameVisible ? shipNameUpper : '')
+				:	''
 		")
 
 		# senderText Name
 		(var marginText:str = "senderName && senderShip && !isShipIconVisible ? ' ' : ''")
-		(var senderText:str = "!(senderName || senderShip)	? ''
-															: senderName + marginText + senderShip + ': '
+		(var senderText:str = "
+			!(senderName || senderShip)	? ''
+										: '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderName + marginText + senderShip + ': </span></font>'
 		")
 
+		# If we use an empty string, the htmlText fails to display the bold fonts properly.
 		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
-		(var senderHtml:str = "
-			senderText	? '<body><font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font></body>'
-						: ''
-		")
+		(var senderHtml:str = "'<body>' + senderText +'</body>'")
 		(var messageColorModded:str = "isSystemMessage ? messageColor : '#ffffff'")
 		# (var messageHtml:str = "subst(TTChat_BASE_HTML, [], {color: messageColorModded,	weight: messageFontWeight,	size: messageFontSize,	message: message})")
 		(var htmlText:str = "'<body><font color=\"' + messageColorModded + '\" size=\"' + messageFontSize +'\"><span class=\"' + messageFontWeight + '\">' + message + '</span></font></body>'")
@@ -909,12 +910,42 @@
 		(macro TTChat_GET_ORIGINAL_DATA)
 		(macro TTChat_GET_MOD_DATA)
 
-		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
-		(var senderText:str = "senderName	? senderName + ': '
-											: ''
+		(var shipIconPrefix:str = "'a'")
+		(var shipIconPostfix:str = "
+			subType == SC.Common.SHIP_TYPE.AIRCARRIER	? '0' :
+			subType == SC.Common.SHIP_TYPE.BATTLESHIP	? '1' :
+			subType == SC.Common.SHIP_TYPE.CRUISER		? '2' :
+			subType == SC.Common.SHIP_TYPE.DESTROYER 	? '3' :
+			subType == SC.Common.SHIP_TYPE.AUXILIARY	? '4' :
+			subType == SC.Common.SHIP_TYPE.SUBMARINE	? '5'
+														: ''
 		")
+		(var marginText:str = "isShipNameVisible && !isShipIconVisible ? ' ' : ''")
+		(var senderShip:str = "
+			originalSenderShip && (!isSelf || isOwnShipNameVisible)
+				?	(isShipNameVisible ? (shipNameUpper + marginText) : '') +
+					(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
+					(isShipTierVisible ? tier : '')
+				:	''
+		")
+		(var shipText:str = "
+			senderShip	? '<font color=\"#ffffff\" size=\"' + shipInfoFontSize +'\"><span class=\"' + shipInfoFontWeight + '\">' + senderShip + '</span></font>'
+						: ''
+		")
+		# If we use an empty string, the htmlText fails to display the bold fonts properly.
+		(var shipHthml:str = "'<body>' + shipText + '</body>'")
+		(var shipImageSubst:dict = "{
+			'[a0]': 'url:../battle_hud/markers/ship/icon_white_aircarrier.png',
+			'[a1]': 'url:../battle_hud/markers/ship/icon_white_battleship.png',
+			'[a2]': 'url:../battle_hud/markers/ship/icon_white_cruiser.png',
+			'[a3]': 'url:../battle_hud/markers/ship/icon_white_destroyer.png',
+			'[a4]': 'url:../battle_hud/markers/ship/icon_white_auxiliary.png',
+			'[a5]': 'url:../battle_hud/markers/ship/icon_white_submarine.png'
+		}")
+
+		# subst(TTChat_BASE_HTML, [], {color: senderColor,	weight: senderFontWeight,	size: senderFontSize,	message: senderText})
 		(var senderHtml:str = "
-			senderName	? '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderText + '</span></font>'
+			senderName	? '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderName + ': </span></font>'
 						: ''
 		")
 		# subst(TTChat_BASE_HTML, [], {color: messageColor,	weight: messageFontWeight,	size: messageFontSize,	message: message})
@@ -935,34 +966,27 @@
 			(marginBottom = 1px)
 			(hitTest = false)
 		)
-		(hblock
-			(bind visible "originalSenderShip && (isShipNameVisible || isShipIconVisible || isShipTierVisible)")
+		# Ship
+		# Wrap it because the susbt images are 27px height
+		(block
+			(bind visible "shipText")
 			(style
+				(bind height "shipInfoFontSize")
+				(align = "middle")
 				(width = 100%)
-				(align = "middle|left")
-				(marginBottom = -6px)
+				(marginTop = 2px)
+				(marginBottom = -4px)
 			)
-			# Ship Name
 			(tf
-				(bind class "shipInfoFontWeight")
-				(bind text "shipNameUpper")
-				(bind visible "isShipNameVisible")
 				(style
-					(bind fontSize "shipInfoFontSize")
+					(width = 100%)
+					(leading = -3)
+					(styleSheet = "TTChat_STYLE_SHEET")
 				)
-			)
-			# Ship Icon
-			(element TTChat_ShipIcon _subType="subType"
-				(bind visible "isShipIconVisible")
-			)
-			# Tier
-			(tf
-				(bind class "shipInfoFontWeight")
-				(bind text "tier")
-				(bind visible "isShipTierVisible")
-				(style
-					(bind fontSize "shipInfoFontSize")
-				)
+				
+				(class $TTChat_MessageText)
+				(bind htmlText "shipHthml")
+				(bindcall substitute imageOffset="shipImageOffset" substitutionMap="shipImageSubst" sourceText="shipHthml" init=true)
 			)
 		)
 
@@ -1137,21 +1161,6 @@
 				(bindcall substitute imageOffset=5 substitutionMap="battleChatEntity.battleChatAndLog.substitutions" sourceText="_originalMessage" init=true)
 				#
 			)
-		)
-	)
-)
-
-(def element TTChat_ShipIcon(_subType:str)
-	(style
-		(width = 27px)
-		(height = 0px)
-		(align = "middle|center")
-	)
-	(block
-		(style
-			(width = "27px")
-			(height = 27)
-			(bind backgroundImage "'url:../battle_hud/markers/ship/icon_white_' + toLower(_subType) + '.png'")
 		)
 	)
 )
