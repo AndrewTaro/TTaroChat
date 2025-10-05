@@ -224,18 +224,25 @@
 	)
 )
 
-(def css $TTChat_SenderInfoTextBold()
-	(extends $FontFamilyDefaultBold)
-	(extends $FontColorDefault)
-	(extends $FontEnableReadability)
-	(fontSize = 12)
+(def macro TTChat_GET_SHIP_ICON_PREFIX (_varName:expression="'shipIconPrefix'")
+	(var name="_varName" type=str value="
+		isEnemy	? 'e' :
+		isAlly	? isInSameDivision	? 's'
+									: isTeamKiller	? 'ba'
+													: 'b'
+				: 'a'
+	")
 )
 
-(def css $TTChat_SenderInfoText()
-	(extends $FontFamilyDefault)
-	(extends $FontColorDefault)
-	(extends $FontEnableReadability)
-	(fontSize = 12)
+(def macro TTChat_GET_SHIP_ICON_POSTFIX (_varName:expression="'shipIconPostfix'")
+	(var name="_varName" type=str value="
+		subType == SC.Common.SHIP_TYPE.AIRCARRIER	? '0' :
+		subType == SC.Common.SHIP_TYPE.BATTLESHIP	? '1' :
+		subType == SC.Common.SHIP_TYPE.CRUISER		? '2' :
+		subType == SC.Common.SHIP_TYPE.DESTROYER 	? '3' :
+		subType == SC.Common.SHIP_TYPE.AUXILIARY	? '4'
+													: '5'
+	")
 )
 
 (def css $TTChat_MessageText()
@@ -694,21 +701,8 @@
 		(macro TTChat_GET_ORIGINAL_DATA)
 		(macro TTChat_GET_MOD_DATA)
 
-		(var shipIconPrefix:str = "
-			isEnemy	? 'e' :
-			isAlly	? isInSameDivision	? 's'
-										: isTeamKiller	? 'ba'
-														: 'b'
-					: 'a'
-		")
-		(var shipIconPostfix:str = "
-			subType == SC.Common.SHIP_TYPE.AIRCARRIER	? '0' :
-			subType == SC.Common.SHIP_TYPE.BATTLESHIP	? '1' :
-			subType == SC.Common.SHIP_TYPE.CRUISER		? '2' :
-			subType == SC.Common.SHIP_TYPE.DESTROYER 	? '3' :
-			subType == SC.Common.SHIP_TYPE.AUXILIARY	? '4'
-														: '5'
-		")
+		(macro TTChat_GET_SHIP_ICON_PREFIX	_varName="'shipIconPrefix'")
+		(macro TTChat_GET_SHIP_ICON_POSTFIX _varName="'shipIconPostfix'")
 		(var senderShip:str = "
 			originalSenderShip && (!isSelf || isOwnShipNameVisible)
 				?	(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
@@ -769,22 +763,8 @@
 		(macro TTChat_GET_ORIGINAL_DATA)
 		(macro TTChat_GET_MOD_DATA)
 
-		(var shipIconPrefix:str = "
-			isEnemy	? 'e' :
-			isAlly	? isInSameDivision	? 's'
-										: isTeamKiller	? 'ba'
-														: 'b'
-					: 'a'
-		")
-		(var shipIconPostfix:str = "
-			subType == SC.Common.SHIP_TYPE.AIRCARRIER	? '0' :
-			subType == SC.Common.SHIP_TYPE.BATTLESHIP	? '1' :
-			subType == SC.Common.SHIP_TYPE.CRUISER		? '2' :
-			subType == SC.Common.SHIP_TYPE.DESTROYER 	? '3' :
-			subType == SC.Common.SHIP_TYPE.AUXILIARY	? '4' :
-			subType == SC.Common.SHIP_TYPE.SUBMARINE	? '5'
-														: ''
-		")
+		(macro TTChat_GET_SHIP_ICON_PREFIX	_varName="'shipIconPrefix'")
+		(macro TTChat_GET_SHIP_ICON_POSTFIX _varName="'shipIconPostfix'")
 		(var senderShip:str = "
 			originalSenderShip && (!isSelf || isOwnShipNameVisible)
 				?	(isShipIconVisible ? ('[' + shipIconPrefix + shipIconPostfix + ']') : '') +
@@ -911,15 +891,7 @@
 		(macro TTChat_GET_MOD_DATA)
 
 		(var shipIconPrefix:str = "'a'")
-		(var shipIconPostfix:str = "
-			subType == SC.Common.SHIP_TYPE.AIRCARRIER	? '0' :
-			subType == SC.Common.SHIP_TYPE.BATTLESHIP	? '1' :
-			subType == SC.Common.SHIP_TYPE.CRUISER		? '2' :
-			subType == SC.Common.SHIP_TYPE.DESTROYER 	? '3' :
-			subType == SC.Common.SHIP_TYPE.AUXILIARY	? '4' :
-			subType == SC.Common.SHIP_TYPE.SUBMARINE	? '5'
-														: ''
-		")
+		(macro TTChat_GET_SHIP_ICON_POSTFIX _varName="'shipIconPostfix'")
 		(var marginText:str = "isShipNameVisible && !isShipIconVisible ? ' ' : ''")
 		(var senderShip:str = "
 			originalSenderShip && (!isSelf || isOwnShipNameVisible)
@@ -962,8 +934,6 @@
 			(width = 100%)
 			(marginLeft = 4px)
 			(marginRight = 4px)
-			(marginTop = 1px)
-			(marginBottom = 1px)
 			(hitTest = false)
 		)
 		# Ship
@@ -974,7 +944,7 @@
 				(bind height "shipInfoFontSize")
 				(align = "middle")
 				(width = 100%)
-				(marginTop = 2px)
+				(marginTop = 4px)
 				(marginBottom = -4px)
 			)
 			(tf
