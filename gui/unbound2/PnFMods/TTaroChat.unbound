@@ -853,12 +853,12 @@
 
 		# Ship
 		(tf
-			(bind visible "senderHtml")
+			(bind visible "senderText")
 			(style
 				(width = 100%)
 				(leading = -3)
 				(marginTop = -3px)
-				(marginBottom = -5px)
+				(marginBottom = -4px)
 				(styleSheet = "TTChat_STYLE_SHEET")
 			)
 			
