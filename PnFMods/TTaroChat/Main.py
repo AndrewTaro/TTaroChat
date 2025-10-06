@@ -67,7 +67,7 @@ SECTION_NAME = 'chatBoxWidth'
 web.addAllowedUrl(ENCODED_URL)
 
 def isPlayerChat(senderId, type):
-    return senderId not in SYSTEM_CHAT_SENDER_IDS and type not in SYSTEM_CHAT_TYPES
+    return senderId not in SYSTEM_CHAT_SENDER_IDS and type not in SYSTEM_CHAT_TYPES and not getattr(battle.getPlayerInfo(senderId), 'isBot', False)
 
 def getUserPref(key, default, rType):
     rawValue = round(ui.getUserPrefs(SECTION_NAME, key, default))
