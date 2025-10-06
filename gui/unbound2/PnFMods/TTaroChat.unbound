@@ -774,10 +774,12 @@
 		")
 
 		# senderText Name
+		# Fix for scenario messages
+		(var senderColorModded:str = "isSysLogMessage && senderName ? messageColor : senderColor")
 		(var marginText:str = "senderName && senderShip && !isShipIconVisible ? ' ' : ''")
 		(var senderText:str = "
 			!(senderName || senderShip)	? ''
-										: '<font color=\"' + senderColor + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderName + marginText + senderShip + ': </span></font>'
+										: '<font color=\"' + senderColorModded + '\" size=\"' + senderFontSize +'\"><span class=\"' + senderFontWeight + '\">' + senderName + marginText + senderShip + ': </span></font>'
 		")
 
 		# If we use an empty string, the htmlText fails to display the bold fonts properly.
