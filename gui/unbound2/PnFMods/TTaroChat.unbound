@@ -282,6 +282,7 @@
 		(var healthComponent:gfx = "avatarEntity.health")
 		(var isAlive:bool = "healthComponent ? healthComponent.isAlive : false" (event "healthComponent.evIsAliveChanged"))
 		(var isSubmarineHudVisible:bool = "avatarEntity.avatar ? (avatarEntity.avatar.ship.ref.ship.subtype == ShipTypes.SUBMARINE) : false")
+		(var timeToRespawn:number = "avatarEntity ? avatarEntity.playerAvatar.timeToRespawn : 0" (event "avatarEntity.playerAvatar.evTimeToRespawnChanged"))
 
 		(macro GET_PREF 'hearFoghorn' "'sound.foghorn.enabled'")
 
@@ -314,6 +315,7 @@
 		(bind width "stageWidth")
 		(bind height "stageHeight")
 	)
+	(bind visible "!timeToRespawn")
 
 	# (element TTChat_MarkerMessageContent)
 	# Experimental
