@@ -484,8 +484,6 @@
 		(macro MOUSE_HANDLER_SCOPE)
 		(macro MOUSE_HANDLER_SCOPE "'chatInput_'")
 
-		(macro GET_PREF 'enableBattleChat' "'ui.enableBattleChat'")
-
 		(var selfAvatarWatcher:gfx = "$datahub.getFirstWatcher(CC.playerAvatar)")
 		(var selfAvatarEntity:gfx = "selfAvatarWatcher.enity" (event "selfAvatarWatcher.event"))
 
@@ -503,8 +501,12 @@
 		(var playerContextMenuVisible:bool = false)
 		(bind playerContextMenuVisible "true" init=false (event "evContextMenuShowed"))
 		(bind playerContextMenuVisible "false" init=false (event "evContextMenuHidden"))
+
+		(var cameraEntity:gfx = "$datahub.getSingleEntity(CC.camera)")
+		(var cameraMode:number = "cameraEntity.camera.mode" (event "cameraEntity.camera.evModeChanged"))
+		(var isBlockedByCamera:bool = "cameraMode == CameraMode.RESPAWN_MAP")
 		
-		(var chatInputActive:bool = "enableBattleChat && isInputFocused")
+		(var chatInputActive:bool = "!isChatDisabled && isInputFocused && !isBlockedByCamera")
 		(var chatInputRollOver:bool = "chatInputActive || chatInput_rollOver || playerContextMenuVisible")
 
 		(var isChatExpanded:bool = false)
@@ -515,14 +517,13 @@
 		(var battleChatAndLogMessagesItems:gfx = "battleChatAndLogMessages.items" (event "battleChatAndLogMessages.evAdded") (event "battleChatAndLogMessages.evRemoved"))
 		(var battleChatAndLogMessagesCount:number = "battleChatAndLogMessagesItems.length" (event "battleChatAndLogMessages.evAdded") (event "battleChatAndLogMessages.evRemoved"))
 
-		(var chatInputTitleColor:number = "	isChatDisabled || !enableBattleChat	? SC.Ui_styles.SERVICE_COLORS.WHITE :
+		(var chatInputTitleColor:number = "	IDS_CHAT_DISABLED					? SC.Ui_styles.SERVICE_COLORS.WHITE :
 											isTeamChat							? SC.Ui_styles.SERVICE_COLORS.GREEN :
 											isDivisionChat						? SC.Ui_styles.SERVICE_COLORS.YELLOW
 																				: SC.Ui_styles.SERVICE_COLORS.WHITE")
 
 		(var chatInputTitleText:str = "	isDivisionChat && isChatDisabled ? 'IDS_CHAT_DIVISION_BUT_NO_DIVISION' :
 										isChatDisabled		? 'IDS_CHAT_DISABLED' :
-										!enableBattleChat	? 'IDS_CHAT_SWITCH_ON' :
 										isTeamChat			? tr('IDS_BATTLE_CHAT_TEAM') + ':' :
 										isDivisionChat		? tr('IDS_LOBBY_CHAT_DIVISION') + ':'
 															: tr('IDS_BATTLE_CHAT_GENERAL') + ':'")
@@ -655,7 +656,7 @@
 			(bind width "chatInputWidth")
 			(height = "COMBAT_LOG_INPUT_HEIGHT")
 			(marginLeft = -3px)
-			(bind hitTest "!isChatDisabled && enableBattleChat")
+			(bind hitTest "!isChatDisabled")
 			#
 		)
 
@@ -691,13 +692,13 @@
 				)
 				(block
 					(style (marginLeft = "XS") (width = 100%))
-					(element CombatLogTextInput _isChatAvailable="enableBattleChat && !isChatDisabled")
+					(element CombatLogTextInput _isChatAvailable="!isChatDisabled && !isBlockedByCamera")
 				)
 			)
 		)
 	)
 	(hblock
-		(bind alpha "isInputFocused && enableBattleChat && !isTabDisabled ? 1 : 0")
+		(bind alpha "isInputFocused && !isChatDisabled && !isTabDisabled ? 1 : 0")
 		(name = 'txtChatHelp')
 
 		(style
