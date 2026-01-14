@@ -517,7 +517,7 @@
 		(var battleChatAndLogMessagesItems:gfx = "battleChatAndLogMessages.items" (event "battleChatAndLogMessages.evAdded") (event "battleChatAndLogMessages.evRemoved"))
 		(var battleChatAndLogMessagesCount:number = "battleChatAndLogMessagesItems.length" (event "battleChatAndLogMessages.evAdded") (event "battleChatAndLogMessages.evRemoved"))
 
-		(var chatInputTitleColor:number = "	IDS_CHAT_DISABLED					? SC.Ui_styles.SERVICE_COLORS.WHITE :
+		(var chatInputTitleColor:number = "	isChatDisabled						? SC.Ui_styles.SERVICE_COLORS.WHITE :
 											isTeamChat							? SC.Ui_styles.SERVICE_COLORS.GREEN :
 											isDivisionChat						? SC.Ui_styles.SERVICE_COLORS.YELLOW
 																				: SC.Ui_styles.SERVICE_COLORS.WHITE")
