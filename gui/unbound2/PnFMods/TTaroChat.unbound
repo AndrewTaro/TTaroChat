@@ -750,6 +750,8 @@
 		(bind marginTop "mTop")
 		(bind marginBottom " mBottom")
 	)
+	(bind name "'MessageListItem_txa_output_' + $index")
+	
 	(controller $Instance
 		(bind renderer "renderer")
 		(args
