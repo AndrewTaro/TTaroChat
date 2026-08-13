@@ -9,6 +9,8 @@ except:
 import xml
 ET =  xml.etree.ElementTree
 
+import TTaroPrefs
+
 def logInfo(*args):
     data = [str(i) for i in args]
     utils.logInfo( '[{}] {}'.format(MOD_NAME, ', '.join(data)) )
@@ -28,7 +30,7 @@ SYSTEM_CHAT_SENDER_IDS = constants.SystemChatSenderIds.ALL
 SYSTEM_CHAT_TYPES = constants.TypeClientSystemChatMessages.ALL + constants.TypeSystemChatMessages.ALL
 
 QuickCommandType = constants.QuickCommandType
-COMMAND_TYPE_TO_PREF_KEY = {
+COMMAND_TYPE_TO_MESSAGE_KIND = {
     QuickCommandType.QUICK_GOOD_GAME    : 'WellDone',
     QuickCommandType.QUICK_GOOD_LUCK    : 'GoodLuck',
     QuickCommandType.QUICK_CARAMBA      : 'WTF',
@@ -62,16 +64,47 @@ RPF_MESSAGE_TO_DIRECTION = {
 }
 
 
-SECTION_NAME = 'chatBoxWidth'
+# shortName -> full dotted key, from chat.schema.json.  Visibility short names are
+# '<relation>.<kind>', kind being a COMMAND_TYPE_TO_MESSAGE_KIND value or 'Chats'/'Achievements'.
+#
+# EVERY schema key is spelled out.  The old code built one by concatenation
+# ('ttChat' + relation + kind + 'Visible'), and the new leaves are NOT a transform of the kind
+# names: 'WTF' became 'Wtf' and 'NeedAirDefense' became 'NeedAirSupport'.  Composing the SHORT
+# name stays safe -- that half is ours -- but a composed schema key resolves to nothing, silently.
+#
+# Only 18 of the 3x12 relation/kind combinations carry a setting.  A missing one means "no control
+# for this", which __isMessageVisible answers True for, exactly as the old default did.
+PREF_KEYS = {
+    'exportChat':          'ttChat.exportChat',
+
+    'ally.Chats':          'ttChat.allyChatsVisible',
+    'ally.Achievements':   'ttChat.allyAchievementsVisible',
+    'ally.WellDone':       'ttChat.allyWellDoneVisible',
+    'ally.GoodLuck':       'ttChat.allyGoodLuckVisible',
+    'ally.WTF':            'ttChat.allyWtfVisible',
+    'ally.Affirmitive':    'ttChat.allyAffirmitiveVisible',
+    'ally.Negative':       'ttChat.allyNegativeVisible',
+    'ally.GetBack':        'ttChat.allyGetBackVisible',
+    'ally.NeedSmoke':      'ttChat.allyNeedSmokeVisible',
+    'ally.NeedSupport':    'ttChat.allyNeedSupportVisible',
+    'ally.NeedAirDefense': 'ttChat.allyNeedAirSupportVisible',
+    'ally.NeedSpotting':   'ttChat.allyNeedSpottingVisible',
+
+    'enemy.Chats':         'ttChat.enemyChatsVisible',
+    'enemy.Achievements':  'ttChat.enemyAchievementsVisible',
+    'enemy.WellDone':      'ttChat.enemyWellDoneVisible',
+    'enemy.GoodLuck':      'ttChat.enemyGoodLuckVisible',
+    'enemy.WTF':           'ttChat.enemyWtfVisible',
+
+    'div.Achievements':    'ttChat.divAchievementsVisible',
+}
+
+gPrefs = TTaroPrefs.PrefStore(MOD_NAME, PREF_KEYS)
 
 web.addAllowedUrl(ENCODED_URL)
 
 def isPlayerChat(senderId, type):
     return senderId not in SYSTEM_CHAT_SENDER_IDS and type not in SYSTEM_CHAT_TYPES and not getattr(battle.getPlayerInfo(senderId), 'isBot', False)
-
-def getUserPref(key, default, rType):
-    rawValue = round(ui.getUserPrefs(SECTION_NAME, key, default))
-    return rType(rawValue)
 
 class TTaroChatExporter(object):
     def __init__(self):
@@ -97,7 +130,7 @@ class TTaroChatExporter(object):
             pass
 
     def __onChatReceived(self, component):
-        if getUserPref('ttChatExportChat', True, bool):
+        if gPrefs.get('exportChat'):
             entity = dataHub.getEntityCollections('battleChatAndLogMessage')[-1]
             comp = entity[CC.battleChatAndLogMessage]
             if isPlayerChat(comp.playerId, comp.type) and comp.message not in RPF_MESSAGE_TO_DIRECTION:
@@ -111,7 +144,7 @@ class TTaroChatExporter(object):
         def callback(res):
             # In case an expernal app returns a response to the exported chat.
             return self.__onResponseReceived(entityId, res)
-        
+
         web.fetchURL(url, callback, '', 5, 'GET')
 
     def __onResponseReceived(self, entityId, res):
@@ -132,21 +165,22 @@ class TTaroChatExporter(object):
             ui.deleteUiElement(entityId)
 
 
-gTTaroChatExporter = TTaroChatExporter()
-
-
 class TTaroChatFilter(object):
     def __init__(self):
         battle.activateQuickCommandFilter(MOD_NAME, self.isQuickCommandVisible)
         battle.activateChatMessageFilter(MOD_NAME, self.isChatVisible)
 
-    def __createPrefKey(self, senderInfo, myInfo, type):
+    def __relation(self, senderInfo, myInfo):
         # is in same divison
         if myInfo.prebattleId > 0 and myInfo.prebattleId == senderInfo.prebattleId:
-            prefPrefix = 'ttChatDiv'
-        else:
-            prefPrefix = 'ttChatAlly' if myInfo.teamId == senderInfo.teamId else 'ttChatEnemy'
-        return prefPrefix + type + 'Visible'
+            return 'div'
+        return 'ally' if myInfo.teamId == senderInfo.teamId else 'enemy'
+
+    def __isMessageVisible(self, senderInfo, myInfo, kind):
+        shortName = self.__relation(senderInfo, myInfo) + '.' + kind
+        if shortName not in PREF_KEYS:
+            return True
+        return bool(gPrefs.get(shortName))
 
     def isQuickCommandVisible(self, senderId, commandType):
         myInfo = battle.getSelfPlayerInfo()
@@ -156,13 +190,11 @@ class TTaroChatFilter(object):
         if not sender or sender.isOwn:
             return True
 
-        if commandType in COMMAND_TYPE_TO_PREF_KEY:
-            prefKey = self.__createPrefKey(sender, myInfo, COMMAND_TYPE_TO_PREF_KEY[commandType])
-            isVisible = getUserPref(prefKey, True, bool)
-            return isVisible
+        if commandType in COMMAND_TYPE_TO_MESSAGE_KIND:
+            return self.__isMessageVisible(sender, myInfo, COMMAND_TYPE_TO_MESSAGE_KIND[commandType])
 
         return True
-    
+
     def isChatVisible(self, senderId, extraData):
         myInfo = battle.getSelfPlayerInfo()
         sender = battle.getPlayerInfo(senderId)
@@ -170,22 +202,33 @@ class TTaroChatFilter(object):
         # Always show your own achievements and chats
         if sender and sender.isOwn:
             return True
-        
+
         # `extraData` can be str for Scenario instructions/bot messages
         type = extraData.get('type', None) if extraData and isinstance(extraData, dict) else None
-        
+
         # Achievement chats
         if type == ACHIEVEMENT_CHAT_TYPE:
             sender = battle.getPlayerInfo(extraData['playerId'])
-            prefName = 'Achievements'
+            kind = 'Achievements'
         # Player chats
         elif isPlayerChat(senderId, type):
-            prefName = 'Chats'
+            kind = 'Chats'
         else:
             return True
-        
-        prefKey = self.__createPrefKey(sender, myInfo, prefName)
-        isVisible = getUserPref(prefKey, True, bool)
-        return isVisible
-    
-gTTaroChatFilter = TTaroChatFilter()
+
+        return self.__isMessageVisible(sender, myInfo, kind)
+
+
+gTTaroChatExporter = None
+gTTaroChatFilter = None
+
+def onPrefsReady():
+    # Nothing may subscribe or register before the store resolves.  If it never does, the two
+    # filters stay unregistered and the chat behaves exactly as vanilla -- every message shown.
+    # That is the right direction to fail for a filter: hiding messages the user never asked to
+    # hide is worse than showing ones they did.
+    global gTTaroChatExporter, gTTaroChatFilter
+    gTTaroChatExporter = TTaroChatExporter()
+    gTTaroChatFilter = TTaroChatFilter()
+
+gPrefs.start(onReady=onPrefsReady)
