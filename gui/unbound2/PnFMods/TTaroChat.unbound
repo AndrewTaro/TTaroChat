@@ -342,11 +342,15 @@
 
 			(bind width "chatBoxWidth")
 			(bind height "chatBoxHeight")
-			# Bottom-left transform origin, matching the schema's left/bottom anchor.  Legacy placed
-			# the TOP edge at stageHeight - 326 - chatBoxHeight - COMBAT_LOG_INPUT_HEIGHT and the
-			# schema's bottom offset is 355; those agree exactly, at any heightScale, because
-			# COMBAT_LOG_INPUT_HEIGHT is 29 and 326 + 29 = 355.
-			(pivotY = 100%)
+			# NO pivot -- top-left origin, as legacy.  A stored position is an ORIGIN, so a pivot change
+			# re-reads the folded legacy TTChat_positionY (a TOP edge) as a BOTTOM edge and moves every
+			# migrated chat up by chatBoxHeight.
+			# The schema's bottom anchor still resolves correctly without a matching pivot: Python is
+			# size-aware and the pivot cancels (boxTop = P - f*size, via the reported poy), so the
+			# default top is stageHeight - 355 - chatBoxHeight at any heightScale -- exactly the legacy
+			# formula, since COMBAT_LOG_INPUT_HEIGHT is 29 and 326 + 29 = 355.
+			# Consequence, and it matches legacy: the box grows DOWNWARD from a fixed top when
+			# chatBoxHeight changes, not upward from a fixed bottom.
 		)
 
 		# Full-size drag surface over the whole chat box.  It has to be this and not the grip icon:
