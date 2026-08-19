@@ -305,13 +305,10 @@
 
 		(macro TT_GET_PREF _varName="'dragLockPref'" _key="'ttChat.disableDragdrop'")
 		(var isDragDropDisabled:bool = "null != dragLockPref && null != dragLockPref.value ? dragLockPref.value : true")
-		(macro TT_GET_PREF _varName="'widthScalePref'" _key="'ttChat.baseStyle.widthScale'")
-		(var widthScale:number = "null != widthScalePref && null != widthScalePref.value ? widthScalePref.value : 1")
-		(macro TT_GET_PREF _varName="'heightScalePref'" _key="'ttChat.baseStyle.heightScale'")
-		(var heightScale:number = "null != heightScalePref && null != heightScalePref.value ? heightScalePref.value : 1")
-
-		(var chatBoxWidth:number = "COMBAT_LOG_WIDTH * widthScale")
-		(var chatBoxHeight:number = "COMBAT_LOG_HEIGHT * heightScale")
+		(macro TT_GET_PREF _varName="'widthPref'" _key="'ttChat.baseStyle.width'")
+		(var chatBoxWidth:number = "widthPref.value")
+		(macro TT_GET_PREF _varName="'heightPref'" _key="'ttChat.baseStyle.height'")
+		(var chatBoxHeight:number = "heightPref.value")
 
 		(macro STAGE_SIZE)
 		# Python owns the position value, its resKey bucket AND the first-placement default
@@ -347,7 +344,7 @@
 			# migrated chat up by chatBoxHeight.
 			# The schema's bottom anchor still resolves correctly without a matching pivot: Python is
 			# size-aware and the pivot cancels (boxTop = P - f*size, via the reported poy), so the
-			# default top is stageHeight - 355 - chatBoxHeight at any heightScale -- exactly the legacy
+			# default top is stageHeight - 355 - chatBoxHeight at any chatBoxHeight -- exactly the legacy
 			# formula, since COMBAT_LOG_INPUT_HEIGHT is 29 and 326 + 29 = 355.
 			# Consequence, and it matches legacy: the box grows DOWNWARD from a fixed top when
 			# chatBoxHeight changes, not upward from a fixed bottom.
