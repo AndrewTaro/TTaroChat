@@ -46,9 +46,9 @@
 (def macro TTChat_GET_MOD_DATA ()
 	# Prefs
 	# We do not use the in-game settings because it is difficult to modify
-	(macro TT_GET_PREF _varName="'__shipFontSizePref'" _key="'ttChat.shipInfo.fontSize'")
+	(macro TT_GET_PREF _varName="'__shipFontSizePref'" _key="'ttChat.shipInfo.font.size'")
 	(var shipInfoFontSize:number = "null != __shipFontSizePref && null != __shipFontSizePref.value ? __shipFontSizePref.value : 12")
-	(macro TT_GET_PREF _varName="'__shipBoldPref'" _key="'ttChat.shipInfo.boldFont'")
+	(macro TT_GET_PREF _varName="'__shipBoldPref'" _key="'ttChat.shipInfo.font.bold'")
 	(var isShipInfoBold:bool = "null != __shipBoldPref && null != __shipBoldPref.value ? __shipBoldPref.value : true")
 	(macro TT_GET_PREF _varName="'__shipNamePref'" _key="'ttChat.shipInfo.name'")
 	(var isShipNameVisible:bool = "null != __shipNamePref && null != __shipNamePref.value ? __shipNamePref.value : true")
@@ -57,20 +57,20 @@
 	(macro TT_GET_PREF _varName="'__shipTierPref'" _key="'ttChat.shipInfo.tier'")
 	(var isShipTierVisible:bool = "null != __shipTierPref && null != __shipTierPref.value ? __shipTierPref.value : true")
 
-	(macro TT_GET_PREF _varName="'__senderFontSizePref'" _key="'ttChat.playerInfo.fontSize'")
+	(macro TT_GET_PREF _varName="'__senderFontSizePref'" _key="'ttChat.playerInfo.font.size'")
 	(var senderFontSize:number = "null != __senderFontSizePref && null != __senderFontSizePref.value ? __senderFontSizePref.value : 15")
-	(macro TT_GET_PREF _varName="'__senderBoldPref'" _key="'ttChat.playerInfo.boldFont'")
+	(macro TT_GET_PREF _varName="'__senderBoldPref'" _key="'ttChat.playerInfo.font.bold'")
 	(var isSenderNameBold:bool = "null != __senderBoldPref && null != __senderBoldPref.value ? __senderBoldPref.value : true")
 	(macro TT_GET_PREF _varName="'__senderNamePref'" _key="'ttChat.playerInfo.name'")
 	(var isSenderNameVisible:bool = "null != __senderNamePref && null != __senderNamePref.value ? __senderNamePref.value : true")
-	(macro TT_GET_PREF _varName="'__clanTagPref'" _key="'ttChat.playerInfo.clanTag'")
+	(macro TT_GET_PREF _varName="'__clanTagPref'" _key="'ttChat.playerInfo.clan'")
 	(var isClanNameVisible:bool = "null != __clanTagPref && null != __clanTagPref.value ? __clanTagPref.value : true")
-	(macro TT_GET_PREF _varName="'__myShipPref'" _key="'ttChat.playerInfo.myShip'")
+	(macro TT_GET_PREF _varName="'__myShipPref'" _key="'ttChat.playerInfo.showMyShip'")
 	(var isOwnShipNameVisible:bool = "null != __myShipPref && null != __myShipPref.value ? __myShipPref.value : false")
 
-	(macro TT_GET_PREF _varName="'__messageFontSizePref'" _key="'ttChat.baseStyle.fontSize'")
+	(macro TT_GET_PREF _varName="'__messageFontSizePref'" _key="'ttChat.style.font.size'")
 	(var messageFontSize:number = "null != __messageFontSizePref && null != __messageFontSizePref.value ? __messageFontSizePref.value : 15")
-	(macro TT_GET_PREF _varName="'__messageBoldPref'" _key="'ttChat.baseStyle.boldFont'")
+	(macro TT_GET_PREF _varName="'__messageBoldPref'" _key="'ttChat.style.font.bold'")
 	(var isMessageBold:bool = "null != __messageBoldPref && null != __messageBoldPref.value ? __messageBoldPref.value : false")
 
 	# Avatar
@@ -303,11 +303,11 @@
 		(var isUnderwater:number = "depthIndex > SC.Battle.DEPTH_STATE.PERISCOPE")
 		#
 
-		(macro TT_GET_PREF _varName="'dragLockPref'" _key="'ttChat.disableDragdrop'")
+		(macro TT_GET_PREF _varName="'dragLockPref'" _key="'ttChat.disableDragDrop'")
 		(var isDragDropDisabled:bool = "null != dragLockPref && null != dragLockPref.value ? dragLockPref.value : true")
-		(macro TT_GET_PREF _varName="'widthPref'" _key="'ttChat.baseStyle.width'")
+		(macro TT_GET_PREF _varName="'widthPref'" _key="'ttChat.style.width'")
 		(var chatBoxWidth:number = "widthPref.value")
-		(macro TT_GET_PREF _varName="'heightPref'" _key="'ttChat.baseStyle.height'")
+		(macro TT_GET_PREF _varName="'heightPref'" _key="'ttChat.style.height'")
 		(var chatBoxHeight:number = "heightPref.value")
 
 		(macro STAGE_SIZE)
@@ -692,13 +692,13 @@
 
 (def element TTChat_CombatLogMessageWrapper (_messageEntity:gfx, _messagesCount:number) layout=true
 	(scope
-		(macro TT_GET_PREF _varName="'styleIndexPref'" _key="'ttChat.baseStyle.styleIndex'")
+		(macro TT_GET_PREF _varName="'styleIndexPref'" _key="'ttChat.style.preset'")
 		(var styleIndexValue:number = "null != styleIndexPref && null != styleIndexPref.value ? styleIndexPref.value : 0")
 		(var styleIndex:number = "styleIndexValue < TTChat_STYLE_INDEX_TO_RENDERER.length ? styleIndexValue : 0")
 		(var renderer:str = "TTChat_STYLE_INDEX_TO_RENDERER[styleIndex]")
 
 		# I have to manually implment the gap here because it refuses to work properly
-		(macro TT_GET_PREF _varName="'gapSizePref'" _key="'ttChat.baseStyle.gapSize'")
+		(macro TT_GET_PREF _varName="'gapSizePref'" _key="'ttChat.style.gap'")
 		(var gapSize:number = "null != gapSizePref && null != gapSizePref.value ? gapSizePref.value : 0")
 		(var halfGap:number = "gapSize / 2")
 		(var mTop:number = "$index == 0 ? 0 : halfGap")
