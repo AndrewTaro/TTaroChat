@@ -75,28 +75,28 @@ RPF_MESSAGE_TO_DIRECTION = {
 # Only 18 of the 3x12 relation/kind combinations carry a setting.  A missing one means "no control
 # for this", which __isMessageVisible answers True for, exactly as the old default did.
 PREF_KEYS = {
-    'exportChat':          'ttChat.exportChat',
+    'exportChat':          'ttaro.ttChat.exportChat',
 
-    'ally.Chats':          'ttChat.ally.showChats',
-    'ally.Achievements':   'ttChat.ally.showAchievements',
-    'ally.WellDone':       'ttChat.ally.showWellDone',
-    'ally.GoodLuck':       'ttChat.ally.showGoodLuck',
-    'ally.WTF':            'ttChat.ally.showWtf',
-    'ally.Affirmitive':    'ttChat.ally.showAffirmative',
-    'ally.Negative':       'ttChat.ally.showNegative',
-    'ally.GetBack':        'ttChat.ally.showGetBack',
-    'ally.NeedSmoke':      'ttChat.ally.showNeedSmoke',
-    'ally.NeedSupport':    'ttChat.ally.showNeedSupport',
-    'ally.NeedAirDefense': 'ttChat.ally.showNeedAirSupport',
-    'ally.NeedSpotting':   'ttChat.ally.showNeedSpotting',
+    'ally.Chats':          'ttaro.ttChat.ally.showChats',
+    'ally.Achievements':   'ttaro.ttChat.ally.showAchievements',
+    'ally.WellDone':       'ttaro.ttChat.ally.showWellDone',
+    'ally.GoodLuck':       'ttaro.ttChat.ally.showGoodLuck',
+    'ally.WTF':            'ttaro.ttChat.ally.showWtf',
+    'ally.Affirmitive':    'ttaro.ttChat.ally.showAffirmative',
+    'ally.Negative':       'ttaro.ttChat.ally.showNegative',
+    'ally.GetBack':        'ttaro.ttChat.ally.showGetBack',
+    'ally.NeedSmoke':      'ttaro.ttChat.ally.showNeedSmoke',
+    'ally.NeedSupport':    'ttaro.ttChat.ally.showNeedSupport',
+    'ally.NeedAirDefense': 'ttaro.ttChat.ally.showNeedAirSupport',
+    'ally.NeedSpotting':   'ttaro.ttChat.ally.showNeedSpotting',
 
-    'enemy.Chats':         'ttChat.enemy.showChats',
-    'enemy.Achievements':  'ttChat.enemy.showAchievements',
-    'enemy.WellDone':      'ttChat.enemy.showWellDone',
-    'enemy.GoodLuck':      'ttChat.enemy.showGoodLuck',
-    'enemy.WTF':           'ttChat.enemy.showWtf',
+    'enemy.Chats':         'ttaro.ttChat.enemy.showChats',
+    'enemy.Achievements':  'ttaro.ttChat.enemy.showAchievements',
+    'enemy.WellDone':      'ttaro.ttChat.enemy.showWellDone',
+    'enemy.GoodLuck':      'ttaro.ttChat.enemy.showGoodLuck',
+    'enemy.WTF':           'ttaro.ttChat.enemy.showWtf',
 
-    'div.Achievements':    'ttChat.div.showAchievements',
+    'div.Achievements':    'ttaro.ttChat.div.showAchievements',
 }
 
 gPrefs = TTaroPrefs.PrefStore(MOD_NAME, PREF_KEYS)
