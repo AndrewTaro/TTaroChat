@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 4,
+  "opVocabularyVersion": 1,
+  "slug": "chat",
+  "migrations": [
+    {
+      "version": 1,
+      "description": "flat keys → dotted ancestry keys; slider step index → value",
+      "ops": [
+        {
+          "op": "rename",
+          "from": "ttChatAllyAchievementsVisible",
+          "to": "ttChat.ally.showAchievements"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyAffirmitiveVisible",
+          "to": "ttChat.ally.showAffirmative"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyChatsVisible",
+          "to": "ttChat.ally.showChats"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyGetBackVisible",
+          "to": "ttChat.ally.showGetBack"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyGoodLuckVisible",
+          "to": "ttChat.ally.showGoodLuck"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyNeedAirDefenseVisible",
+          "to": "ttChat.ally.showNeedAirSupport"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyNeedSmokeVisible",
+          "to": "ttChat.ally.showNeedSmoke"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyNeedSpottingVisible",
+          "to": "ttChat.ally.showNeedSpotting"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyNeedSupportVisible",
+          "to": "ttChat.ally.showNeedSupport"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyNegativeVisible",
+          "to": "ttChat.ally.showNegative"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyWellDoneVisible",
+          "to": "ttChat.ally.showWellDone"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatAllyWTFVisible",
+          "to": "ttChat.ally.showWtf"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatChatBoldFont",
+          "to": "ttChat.style.font.bold"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatChatFontSize",
+          "to": "ttChat.style.font.size"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatClanNameVisible",
+          "to": "ttChat.playerInfo.clan"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatDisableDragDrop",
+          "to": "ttChat.disableDragDrop"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatDivAchievementsVisible",
+          "to": "ttChat.div.showAchievements"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatEnemyAchievementsVisible",
+          "to": "ttChat.enemy.showAchievements"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatEnemyChatsVisible",
+          "to": "ttChat.enemy.showChats"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatEnemyGoodLuckVisible",
+          "to": "ttChat.enemy.showGoodLuck"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatEnemyWellDoneVisible",
+          "to": "ttChat.enemy.showWellDone"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatEnemyWTFVisible",
+          "to": "ttChat.enemy.showWtf"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatExportChat",
+          "to": "ttChat.exportChat"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatGapSize",
+          "to": "ttChat.style.gap"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatHeightScale",
+          "to": "ttChat.style.height"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatPlayerInfoBoldFont",
+          "to": "ttChat.playerInfo.font.bold"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatPlayerInfoFontSize",
+          "to": "ttChat.playerInfo.font.size"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatPlayerNameVisible",
+          "to": "ttChat.playerInfo.name"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatShipClassIconVisible",
+          "to": "ttChat.shipInfo.icon"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatShipInfoBoldFont",
+          "to": "ttChat.shipInfo.font.bold"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatShipInfoFontSize",
+          "to": "ttChat.shipInfo.font.size"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatShipNameVisible",
+          "to": "ttChat.shipInfo.name"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatShipTierVisible",
+          "to": "ttChat.shipInfo.tier"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatShowOwnShip",
+          "to": "ttChat.playerInfo.showMyShip"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatStyleIndex",
+          "to": "ttChat.style.preset"
+        },
+        {
+          "op": "rename",
+          "from": "ttChatWidthScale",
+          "to": "ttChat.style.width"
+        },
+        {
+          "op": "transform",
+          "from": "ttChat.playerInfo.font.size",
+          "to": "ttChat.playerInfo.font.size",
+          "transform": "stepIndex",
+          "args": {
+            "min": 10,
+            "step": 1
+          }
+        },
+        {
+          "op": "transform",
+          "from": "ttChat.shipInfo.font.size",
+          "to": "ttChat.shipInfo.font.size",
+          "transform": "stepIndex",
+          "args": {
+            "min": 10,
+            "step": 1
+          }
+        },
+        {
+          "op": "transform",
+          "from": "ttChat.style.font.size",
+          "to": "ttChat.style.font.size",
+          "transform": "stepIndex",
+          "args": {
+            "min": 10,
+            "step": 1
+          }
+        },
+        {
+          "op": "transform",
+          "from": "ttChat.style.height",
+          "to": "ttChat.style.height",
+          "transform": "stepIndex",
+          "args": {
+            "min": 100,
+            "step": 20
+          }
+        },
+        {
+          "op": "transform",
+          "from": "ttChat.style.width",
+          "to": "ttChat.style.width",
+          "transform": "stepIndex",
+          "args": {
+            "min": 127.5,
+            "step": 25.5
+          }
+        }
+      ]
+    }
+  ],
+  "legacyPositions": [
+    {
+      "key": "ttChat.position",
+      "element": "TTChat"
+    }
+  ]
+}
