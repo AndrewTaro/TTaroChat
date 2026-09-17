@@ -1,11 +1,11 @@
 {
   "schemaVersion": 4,
-  "opVocabularyVersion": 1,
+  "opVocabularyVersion": 3,
   "slug": "chat",
   "migrations": [
     {
       "version": 1,
-      "description": "flat keys → dotted ancestry keys; slider step index → value",
+      "description": "flat keys → dotted ancestry keys; legacy values decoded and folded onto the derived keys",
       "ops": [
         {
           "op": "rename",
@@ -59,23 +59,18 @@
         },
         {
           "op": "rename",
-          "from": "ttChatAllyWellDoneVisible",
-          "to": "ttChat.ally.showWellDone"
-        },
-        {
-          "op": "rename",
           "from": "ttChatAllyWTFVisible",
           "to": "ttChat.ally.showWtf"
         },
         {
           "op": "rename",
-          "from": "ttChatChatBoldFont",
-          "to": "ttChat.style.font.bold"
+          "from": "ttChatAllyWellDoneVisible",
+          "to": "ttChat.ally.showWellDone"
         },
         {
           "op": "rename",
-          "from": "ttChatChatFontSize",
-          "to": "ttChat.style.font.size"
+          "from": "ttChatChatBoldFont",
+          "to": "ttChat.style.font.bold"
         },
         {
           "op": "rename",
@@ -109,13 +104,13 @@
         },
         {
           "op": "rename",
-          "from": "ttChatEnemyWellDoneVisible",
-          "to": "ttChat.enemy.showWellDone"
+          "from": "ttChatEnemyWTFVisible",
+          "to": "ttChat.enemy.showWtf"
         },
         {
           "op": "rename",
-          "from": "ttChatEnemyWTFVisible",
-          "to": "ttChat.enemy.showWtf"
+          "from": "ttChatEnemyWellDoneVisible",
+          "to": "ttChat.enemy.showWellDone"
         },
         {
           "op": "rename",
@@ -129,18 +124,8 @@
         },
         {
           "op": "rename",
-          "from": "ttChatHeightScale",
-          "to": "ttChat.style.height"
-        },
-        {
-          "op": "rename",
           "from": "ttChatPlayerInfoBoldFont",
           "to": "ttChat.playerInfo.font.bold"
-        },
-        {
-          "op": "rename",
-          "from": "ttChatPlayerInfoFontSize",
-          "to": "ttChat.playerInfo.font.size"
         },
         {
           "op": "rename",
@@ -156,11 +141,6 @@
           "op": "rename",
           "from": "ttChatShipInfoBoldFont",
           "to": "ttChat.shipInfo.font.bold"
-        },
-        {
-          "op": "rename",
-          "from": "ttChatShipInfoFontSize",
-          "to": "ttChat.shipInfo.font.size"
         },
         {
           "op": "rename",
@@ -183,58 +163,128 @@
           "to": "ttChat.style.preset"
         },
         {
-          "op": "rename",
-          "from": "ttChatWidthScale",
-          "to": "ttChat.style.width"
-        },
-        {
           "op": "transform",
-          "from": "ttChat.playerInfo.font.size",
+          "transform": "compose",
           "to": "ttChat.playerInfo.font.size",
-          "transform": "stepIndex",
-          "args": {
-            "min": 10,
-            "step": 1
+          "sources": [
+            {
+              "key": "ttChatPlayerInfoFontSize"
+            }
+          ],
+          "value": {
+            "add": [
+              10,
+              {
+                "mul": [
+                  {
+                    "round": {
+                      "src": 0
+                    }
+                  },
+                  1
+                ]
+              }
+            ]
           }
         },
         {
           "op": "transform",
-          "from": "ttChat.shipInfo.font.size",
+          "transform": "compose",
           "to": "ttChat.shipInfo.font.size",
-          "transform": "stepIndex",
-          "args": {
-            "min": 10,
-            "step": 1
+          "sources": [
+            {
+              "key": "ttChatShipInfoFontSize"
+            }
+          ],
+          "value": {
+            "add": [
+              10,
+              {
+                "mul": [
+                  {
+                    "round": {
+                      "src": 0
+                    }
+                  },
+                  1
+                ]
+              }
+            ]
           }
         },
         {
           "op": "transform",
-          "from": "ttChat.style.font.size",
+          "transform": "compose",
           "to": "ttChat.style.font.size",
-          "transform": "stepIndex",
-          "args": {
-            "min": 10,
-            "step": 1
+          "sources": [
+            {
+              "key": "ttChatChatFontSize"
+            }
+          ],
+          "value": {
+            "add": [
+              10,
+              {
+                "mul": [
+                  {
+                    "round": {
+                      "src": 0
+                    }
+                  },
+                  1
+                ]
+              }
+            ]
           }
         },
         {
           "op": "transform",
-          "from": "ttChat.style.height",
+          "transform": "compose",
           "to": "ttChat.style.height",
-          "transform": "stepIndex",
-          "args": {
-            "min": 100,
-            "step": 20
+          "sources": [
+            {
+              "key": "ttChatHeightScale"
+            }
+          ],
+          "value": {
+            "add": [
+              100,
+              {
+                "mul": [
+                  {
+                    "round": {
+                      "src": 0
+                    }
+                  },
+                  20
+                ]
+              }
+            ]
           }
         },
         {
           "op": "transform",
-          "from": "ttChat.style.width",
+          "transform": "compose",
           "to": "ttChat.style.width",
-          "transform": "stepIndex",
-          "args": {
-            "min": 127.5,
-            "step": 25.5
+          "sources": [
+            {
+              "key": "ttChatWidthScale"
+            }
+          ],
+          "value": {
+            "add": [
+              127.5,
+              {
+                "mul": [
+                  {
+                    "round": {
+                      "src": 0
+                    }
+                  },
+                  25.5
+                ]
+              }
+            ]
           }
         }
       ]
