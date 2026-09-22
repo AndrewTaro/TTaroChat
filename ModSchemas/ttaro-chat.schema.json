@@ -427,7 +427,7 @@
         {
           "kind": "setting",
           "control": "toggle",
-          "key": "ttChat.ally.showNeedAirSupport",
+          "key": "ttChat.ally.showNeedAirDefense",
           "label": "IDS_TT_NEED_AIR_DEFENSE_CHATS",
           "default": true
         },

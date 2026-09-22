@@ -9,7 +9,7 @@ except:
 import xml
 ET =  xml.etree.ElementTree
 
-import TTaroPrefs
+import Hub
 
 def logInfo(*args):
     data = [str(i) for i in args]
@@ -33,8 +33,8 @@ QuickCommandType = constants.QuickCommandType
 COMMAND_TYPE_TO_MESSAGE_KIND = {
     QuickCommandType.QUICK_GOOD_GAME    : 'WellDone',
     QuickCommandType.QUICK_GOOD_LUCK    : 'GoodLuck',
-    QuickCommandType.QUICK_CARAMBA      : 'WTF',
-    QuickCommandType.QUICK_AYE_AYE      : 'Affirmitive',
+    QuickCommandType.QUICK_CARAMBA      : 'Wtf',
+    QuickCommandType.QUICK_AYE_AYE      : 'Affirmative',
     QuickCommandType.QUICK_NO_WAY       : 'Negative',
     QuickCommandType.BACK               : 'GetBack',
     QuickCommandType.NEED_SMOKE         : 'NeedSmoke',
@@ -64,42 +64,37 @@ RPF_MESSAGE_TO_DIRECTION = {
 }
 
 
-# shortName -> full dotted key, from chat.schema.json.  Visibility short names are
-# '<relation>.<kind>', kind being a COMMAND_TYPE_TO_MESSAGE_KIND value or 'Chats'/'Achievements'.
-#
-# EVERY schema key is spelled out.  The old code built one by concatenation
-# ('ttChat' + relation + kind + 'Visible'), and the new leaves are NOT a transform of the kind
-# names: 'WTF' became 'Wtf' and 'NeedAirDefense' became 'NeedAirSupport'.  Composing the SHORT
-# name stays safe -- that half is ours -- but a composed schema key resolves to nothing, silently.
+# A visibility tail is '<relation>.show<kind>', kind being a COMMAND_TYPE_TO_MESSAGE_KIND value
+# or 'Chats'/'Achievements'.  __isMessageVisible composes it; the tails are spelled out literally
+# here so the pref linters can see them against the schema.
 #
 # Only 18 of the 3x12 relation/kind combinations carry a setting.  A missing one means "no control
-# for this", which __isMessageVisible answers True for, exactly as the old default did.
-PREF_KEYS = {
-    'exportChat':          'ttaro.ttChat.exportChat',
+# for this" and reads as visible.
+PREF_PREFIX = 'ttaro.ttChat.'
+PREF_KEYS = (
+    'exportChat',
 
-    'ally.Chats':          'ttaro.ttChat.ally.showChats',
-    'ally.Achievements':   'ttaro.ttChat.ally.showAchievements',
-    'ally.WellDone':       'ttaro.ttChat.ally.showWellDone',
-    'ally.GoodLuck':       'ttaro.ttChat.ally.showGoodLuck',
-    'ally.WTF':            'ttaro.ttChat.ally.showWtf',
-    'ally.Affirmitive':    'ttaro.ttChat.ally.showAffirmative',
-    'ally.Negative':       'ttaro.ttChat.ally.showNegative',
-    'ally.GetBack':        'ttaro.ttChat.ally.showGetBack',
-    'ally.NeedSmoke':      'ttaro.ttChat.ally.showNeedSmoke',
-    'ally.NeedSupport':    'ttaro.ttChat.ally.showNeedSupport',
-    'ally.NeedAirDefense': 'ttaro.ttChat.ally.showNeedAirSupport',
-    'ally.NeedSpotting':   'ttaro.ttChat.ally.showNeedSpotting',
+    'ally.showChats',
+    'ally.showAchievements',
+    'ally.showWellDone',
+    'ally.showGoodLuck',
+    'ally.showWtf',
+    'ally.showAffirmative',
+    'ally.showNegative',
+    'ally.showGetBack',
+    'ally.showNeedSmoke',
+    'ally.showNeedSupport',
+    'ally.showNeedAirDefense',
+    'ally.showNeedSpotting',
 
-    'enemy.Chats':         'ttaro.ttChat.enemy.showChats',
-    'enemy.Achievements':  'ttaro.ttChat.enemy.showAchievements',
-    'enemy.WellDone':      'ttaro.ttChat.enemy.showWellDone',
-    'enemy.GoodLuck':      'ttaro.ttChat.enemy.showGoodLuck',
-    'enemy.WTF':           'ttaro.ttChat.enemy.showWtf',
+    'enemy.showChats',
+    'enemy.showAchievements',
+    'enemy.showWellDone',
+    'enemy.showGoodLuck',
+    'enemy.showWtf',
 
-    'div.Achievements':    'ttaro.ttChat.div.showAchievements',
-}
-
-gPrefs = TTaroPrefs.PrefStore(MOD_NAME, PREF_KEYS)
+    'div.showAchievements',
+)
 
 web.addAllowedUrl(ENCODED_URL)
 
@@ -177,10 +172,10 @@ class TTaroChatFilter(object):
         return 'ally' if myInfo.teamId == senderInfo.teamId else 'enemy'
 
     def __isMessageVisible(self, senderInfo, myInfo, kind):
-        shortName = self.__relation(senderInfo, myInfo) + '.' + kind
-        if shortName not in PREF_KEYS:
+        tail = self.__relation(senderInfo, myInfo) + '.show' + kind
+        if tail not in PREF_KEYS:
             return True
-        return bool(gPrefs.get(shortName))
+        return bool(gPrefs.get(tail))
 
     def isQuickCommandVisible(self, senderId, commandType):
         myInfo = battle.getSelfPlayerInfo()
@@ -228,7 +223,16 @@ def onPrefsReady():
     # That is the right direction to fail for a filter: hiding messages the user never asked to
     # hide is worse than showing ones they did.
     global gTTaroChatExporter, gTTaroChatFilter
+
+    # The pref linters only see PREF_KEYS against the schema, so a kind whose composed tail was
+    # never declared is invisible to them -- it just silently stops being filterable.  'ally'
+    # carries every quick-command kind, so it is the relation to check against.
+    orphans = sorted(k for k in set(COMMAND_TYPE_TO_MESSAGE_KIND.values())
+                     if 'ally.show' + k not in PREF_KEYS)
+    if orphans:
+        logError('no ally setting for kind(s): ' + ', '.join(orphans))
+
     gTTaroChatExporter = TTaroChatExporter()
     gTTaroChatFilter = TTaroChatFilter()
 
-gPrefs.start(onReady=onPrefsReady)
+gPrefs = Hub.Prefs(MOD_NAME, PREF_KEYS, PREF_PREFIX, onReady=onPrefsReady)

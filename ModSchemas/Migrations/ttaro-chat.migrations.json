@@ -35,7 +35,7 @@
         {
           "op": "rename",
           "from": "ttChatAllyNeedAirDefenseVisible",
-          "to": "ttChat.ally.showNeedAirSupport"
+          "to": "ttChat.ally.showNeedAirDefense"
         },
         {
           "op": "rename",
