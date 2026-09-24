@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "id": "cmtkswuwy000gv014jc4619yu",
   "author": "ttaro",
   "modName": "Chat",
@@ -9,6 +9,7 @@
     {
       "kind": "group",
       "key": "cmtktam9i00a3v0d41bnhc9y6",
+      "display": "section",
       "label": "IDS_TT_TITLE_GENERAL",
       "collapse": "expanded",
       "children": [
@@ -56,6 +57,7 @@
     {
       "kind": "group",
       "key": "cmtktameo00ecv0d46ow8rfd1",
+      "display": "section",
       "label": "IDS_TT_TITLE_STYLE",
       "collapse": "expanded",
       "children": [
@@ -84,7 +86,7 @@
         {
           "kind": "group",
           "key": "cmt4us0gc000sv0rwf97a9tw7",
-          "aggregate": "inline",
+          "display": "transparent",
           "children": [
             {
               "kind": "setting",
@@ -143,13 +145,14 @@
     {
       "kind": "group",
       "key": "cmtktamkh00j6v0d43lra0xjw",
+      "display": "section",
       "label": "IDS_TT_TITLE_PLAYER_INFO",
       "collapse": "expanded",
       "children": [
         {
           "kind": "group",
           "key": "cmt4us0gg000uv0rwnubp6aag",
-          "aggregate": "inline",
+          "display": "transparent",
           "children": [
             {
               "kind": "setting",
@@ -226,13 +229,14 @@
     {
       "kind": "group",
       "key": "cmtktamh500gev0d49ha4gdkp",
+      "display": "section",
       "label": "IDS_TT_TITLE_SHIP_INFO",
       "collapse": "expanded",
       "children": [
         {
           "kind": "group",
           "key": "cmt4us0gj000wv0rwhjt9fj2u",
-          "aggregate": "inline",
+          "display": "transparent",
           "children": [
             {
               "kind": "setting",
@@ -308,6 +312,7 @@
     {
       "kind": "group",
       "key": "cmtktam2f004cv0d4lm8su1y1",
+      "display": "section",
       "label": "IDS_TT_TITLE_ENEMY_CHAT",
       "collapse": "expanded",
       "children": [
@@ -351,6 +356,7 @@
     {
       "kind": "group",
       "key": "cmtktamir00hov0d4tfvhgc8e",
+      "display": "section",
       "label": "IDS_TT_TITLE_ALLY_CHAT",
       "collapse": "expanded",
       "children": [
@@ -443,6 +449,7 @@
     {
       "kind": "group",
       "key": "cmtktamdk00dgv0d4hffj0oiy",
+      "display": "section",
       "label": "IDS_TT_TITLE_DIVISION_CHAT",
       "collapse": "expanded",
       "children": [
