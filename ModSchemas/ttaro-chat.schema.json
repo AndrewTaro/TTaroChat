@@ -5,6 +5,7 @@
   "modName": "Chat",
   "slug": "chat",
   "order": 16,
+  "migrationVersion": 1,
   "tree": [
     {
       "kind": "group",
